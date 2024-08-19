@@ -1,0 +1,246 @@
+:root {
+    --bg-dark-100: #121212;
+    --bg-dark-200: #1E1E1E;
+    --bg-dark-300: #2D2D2D;
+    --text-primary: #E0E0E0;
+    --text-secondary: #A0A0A0;
+    --accent-color: #8B5CF6;
+    --accent-hover: #7C3AED;
+    --reader-bg: #FFFFFF;
+    --reader-text: #000000;
+}
+
+body {
+    background-color: var(--bg-dark-100);
+    color: var(--text-primary);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+#reader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--reader-bg);
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+}
+
+#epub-viewer {
+    flex-grow: 1;
+    overflow: hidden;
+    color: var(--reader-text);
+}
+
+#reader-controls {
+    padding: 10px;
+    background-color: var(--bg-dark-300);
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.reader-btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+    background-color: var(--accent-color);
+    color: var(--text-primary);
+}
+
+.reader-btn:hover {
+    background-color: var(--accent-hover);
+}
+
+.book-cover {
+    width: 100%;
+    padding-top: 150%; /* 2:3 aspect ratio */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.book-cover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+}
+
+.book-cover > div {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-dark-300);
+    color: var(--text-secondary);
+}
+
+.container {
+    background-color: var(--bg-dark-200);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+h1, h2 {
+    color: var(--accent-color);
+}
+
+a {
+    color: var(--accent-color);
+    transition: color 0.3s;
+}
+
+a:hover {
+    color: var(--accent-hover);
+}
+
+/* Search and Sort Controls */
+#searchForm {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+#searchInput, select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+    border: 1px solid var(--bg-dark-300);
+    background-color: var(--bg-dark-200);
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+#searchInput:focus, select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+button[type="submit"] {
+    padding: 0.75rem 1rem;
+    background-color: var(--accent-color);
+    color: var(--text-primary);
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button[type="submit"]:hover {
+    background-color: var(--accent-hover);
+}
+
+/* Autocomplete suggestions */
+#autocomplete-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: var(--bg-dark-200);
+    border: 1px solid var(--bg-dark-300);
+    border-top: none;
+    border-radius: 0 0 0.375rem 0.375rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+}
+
+#autocomplete-suggestions li {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#autocomplete-suggestions li:hover {
+    background-color: var(--bg-dark-300);
+}
+
+/* Book metadata styling */
+.book-metadata p {
+    margin-bottom: 0.25rem;
+}
+
+.book-genre {
+    font-style: italic;
+}
+
+/* Responsive styles */
+@media (max-width: 640px) {
+    #searchForm > div, .mb-4 > div {
+        flex-direction: column;
+    }
+
+    #searchInput, select, button[type="submit"] {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    select[name="searchField"], #sortBy {
+        border-radius: 0.375rem 0.375rem 0 0;
+    }
+
+    button[type="submit"], #sortOrder {
+        border-radius: 0 0 0.375rem 0.375rem;
+    }
+
+    #reader-controls {
+        flex-wrap: wrap;
+    }
+
+    .reader-btn {
+        flex: 1 0 auto;
+    }
+
+    .container {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    h1 {
+        font-size: 1.8rem;
+    }
+
+    .book-cover {
+        padding-top: 133.33%; /* 3:4 aspect ratio for mobile */
+    }
+}
+
+@media (min-width: 641px) {
+    #searchForm > div {
+        flex-direction: row;
+    }
+
+    #searchInput {
+        border-radius: 0.375rem 0 0 0.375rem;
+    }
+
+    select[name="searchField"] {
+        border-radius: 0;
+    }
+
+    button[type="submit"] {
+        border-radius: 0 0.375rem 0.375rem 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
