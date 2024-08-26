@@ -114,6 +114,24 @@ function getAutocompleteSuggestions($dir, $term) {
     return array_unique($suggestions);
 }
 
+function deleteEbook($filePath) {
+    if (file_exists($filePath) && is_file($filePath)) {
+        if (unlink($filePath)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Handle delete request
+if (isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['bookPath'])) {
+    $bookPath = 'books/' . $_POST['bookPath'];
+    $result = deleteEbook($bookPath);
+    header('Content-Type: application/json');
+    echo json_encode(['success' => $result]);
+    exit;
+}
+
 $searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
 $searchField = isset($_GET['searchField']) ? $_GET['searchField'] : 'all';
 $sortBy = isset($_GET['sortBy']) ? $_GET['sortBy'] : 'title';
@@ -146,7 +164,7 @@ $endPage = min($page + $paginationRange, $totalPages);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BookShelf</title>
+    <title>Book Collection</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -171,7 +189,7 @@ $endPage = min($page + $paginationRange, $totalPages);
     <header class="bg-white dark:bg-gray-800 shadow-md mb-4 py-4">
         <div class="container mx-auto px-4">
             <div class="flex justify-between items-center mb-4">
-                <h1 class="text-2xl md:text-3xl font-bold text-purple-600 dark:text-purple-400">Book Shelf</h1>
+                <h1 class="text-2xl md:text-3xl font-bold text-purple-600 dark:text-purple-400">Book Collection</h1>
                 <button id="theme-toggle" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200">
                     <svg class="w-6 h-6 text-gray-800 dark:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
@@ -217,38 +235,51 @@ $endPage = min($page + $paginationRange, $totalPages);
         </div>
     </header>
 
-    <div class="container mx-auto px-4">
+<div class="container mx-auto px-4">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6 mb-8">
             <h2 class="text-xl sm:text-2xl font-semibold mb-4 text-purple-600 dark:text-purple-400">Ebooks</h2>
             <?php if (empty($books)): ?>
                 <p class="text-gray-600 dark:text-gray-400 italic">No ebooks found. Please make sure the 'books' folder exists and contains EPUB files.</p>
             <?php else: ?>
-                <ul class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                    <?php foreach ($paginatedBooks as $book): ?>
-                        <li class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200">
-                            <div class="book-cover" data-book="books/<?= htmlspecialchars($book['path']) ?>">
-                                <div class="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">Loading...</div>
-                            </div>
-                            <div class="flex flex-col items-start justify-between mt-2">
-                                <a href="#" class="flex items-start flex-1 text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 text-sm font-semibold truncate w-full" onclick="openReader('books/<?= htmlspecialchars($book['path']) ?>'); return false;" title="<?= htmlspecialchars($book['metadata']['title']) ?>">
-                                    <?= htmlspecialchars($book['metadata']['title']) ?>
-                                </a>
-                                <p class="text-sm text-gray-600 dark:text-gray-400"><?= htmlspecialchars($book['metadata']['author']) ?></p>
-                                <p class="text-xs text-gray-500 dark:text-gray-500"><?= htmlspecialchars($book['metadata']['published']) ?></p>
-                                <p class="text-xs text-gray-500 dark:text-gray-500">Genre: <?= htmlspecialchars($book['metadata']['genre']) ?></p>
-                                <div class="flex items-center mt-1">
-                                    <a href="books/<?= htmlspecialchars($book['path']) ?>" class="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300" download title="Download">
-    🔥
-</a>
-<a href="#" class="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 ml-2" onclick="openEditModal('<?= htmlspecialchars($book['path']) ?>', '<?= htmlspecialchars($book['metadata']['title']) ?>', '<?= htmlspecialchars($book['metadata']['author']) ?>', '<?= htmlspecialchars($book['metadata']['published']) ?>', '<?= htmlspecialchars($book['metadata']['genre']) ?>'); return false;" title="Edit Metadata">
-    ✏️
-</a>
-                                </div>
-                            </div>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-
+ <ul class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+    <?php foreach ($paginatedBooks as $book): ?>
+        <li class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200">
+            <div class="book-cover" data-book="books/<?= htmlspecialchars($book['path']) ?>">
+                <div class="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">Loading...</div>
+            </div>
+            <div class="flex flex-col items-start justify-between mt-2">
+                <a href="#" class="flex items-start flex-1 text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 text-sm font-semibold truncate w-full open-reader" 
+                   data-book-path="<?= htmlspecialchars($book['path'], ENT_QUOTES, 'UTF-8') ?>"
+                   title="<?= htmlspecialchars($book['metadata']['title'], ENT_QUOTES, 'UTF-8') ?>">
+                    <?= htmlspecialchars($book['metadata']['title']) ?>
+                </a>
+                <p class="text-sm text-gray-600 dark:text-gray-400"><?= htmlspecialchars($book['metadata']['author']) ?></p>
+                <p class="text-xs text-gray-500 dark:text-gray-500"><?= htmlspecialchars($book['metadata']['published']) ?></p>
+                <p class="text-xs text-gray-500 dark:text-gray-500">Genre: <?= htmlspecialchars($book['metadata']['genre']) ?></p>
+                <div class="flex items-center mt-1">
+                    <a href="books/<?= htmlspecialchars($book['path']) ?>" class="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300" download title="Download">
+                        ⬇️
+                    </a>
+                    <a href="#" class="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 ml-2 edit-metadata" 
+                       data-book-path="<?= htmlspecialchars($book['path'], ENT_QUOTES, 'UTF-8') ?>"
+                       data-book-title="<?= htmlspecialchars($book['metadata']['title'], ENT_QUOTES, 'UTF-8') ?>"
+                       data-book-author="<?= htmlspecialchars($book['metadata']['author'], ENT_QUOTES, 'UTF-8') ?>"
+                       data-book-published="<?= htmlspecialchars($book['metadata']['published'], ENT_QUOTES, 'UTF-8') ?>"
+                       data-book-genre="<?= htmlspecialchars($book['metadata']['genre'], ENT_QUOTES, 'UTF-8') ?>"
+                       title="Edit Metadata">
+                        ✏️
+                    </a>
+                    <a href="#" class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 ml-2 delete-book" 
+                       data-book-path="<?= htmlspecialchars($book['path'], ENT_QUOTES, 'UTF-8') ?>"
+                       data-book-title="<?= htmlspecialchars($book['metadata']['title'], ENT_QUOTES, 'UTF-8') ?>"
+                       title="Delete">
+                        🗑️
+                    </a>
+                </div>
+            </div>
+        </li>
+    <?php endforeach; ?>
+</ul>
                 <div class="flex justify-center mt-6 flex-wrap">
                     <?php if ($page > 1): ?>
                         <a href="?page=1&search=<?= urlencode($searchTerm) ?>&searchField=<?= urlencode($searchField) ?>&sortBy=<?= urlencode($sortBy) ?>&sortOrder=<?= urlencode($sortOrder) ?>" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-purple-500 hover:text-white dark:hover:bg-purple-500 dark:hover:text-white transition-colors duration-200 m-1">First</a>
