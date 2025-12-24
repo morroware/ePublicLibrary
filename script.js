@@ -262,19 +262,13 @@ const ThemeManager = {
     
     init() {
         const savedTheme = this.getSavedTheme();
-        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        
-        if (savedTheme === 'dark' || (savedTheme === null && systemPrefersDark)) {
+
+        // Default to dark mode on first visit, otherwise use saved preference
+        if (savedTheme === null || savedTheme === 'dark') {
             this.setDarkMode(true, false);
         } else {
             this.setDarkMode(false, false);
         }
-        
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-            if (this.getSavedTheme() === null) {
-                this.setDarkMode(e.matches, true);
-            }
-        });
     },
     
     toggle() {
