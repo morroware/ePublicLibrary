@@ -177,76 +177,57 @@ $endPage = min($page + $paginationRange, $totalPages);
     <!-- Header -->
     <header>
         <div class="header-container">
-            
-            <!-- Logo and Theme Toggle -->
-            <div class="header-top">
-                <div class="logo-container">
+            <div class="header-row">
+                <!-- Logo -->
+                <a href="/" class="logo-container">
                     <div class="logo-icon">B</div>
-                    <div class="logo-text">
-                        <h1>BookShelf</h1>
-                        <p>Your Digital Library</p>
-                    </div>
-                </div>
-                
-                <button id="theme-toggle" aria-label="Toggle theme">
-                    <div class="toggle-slider">
-                        <svg class="w-3.5 h-3.5 text-amber-500 dark:hidden" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
-                        </svg>
-                        <svg class="w-3.5 h-3.5 text-white hidden dark:block" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
-                        </svg>
-                    </div>
-                </button>
-            </div>
-            
-            <!-- Search Form -->
-            <form id="searchForm" action="" method="get" class="search-container">
-                <div class="search-form-inner">
+                    <span class="logo-text">BookShelf</span>
+                </a>
+
+                <!-- Search Form -->
+                <form id="searchForm" action="" method="get" class="search-container">
                     <div class="search-input-wrapper">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
-                        <input type="text" 
-                               name="search" 
-                               id="searchInput" 
-                               value="<?= htmlspecialchars($searchTerm, ENT_QUOTES, 'UTF-8') ?>" 
-                               placeholder="Search books by title, author, or genre..."
+                        <input type="text"
+                               name="search"
+                               id="searchInput"
+                               value="<?= htmlspecialchars($searchTerm, ENT_QUOTES, 'UTF-8') ?>"
+                               placeholder="Search books..."
                                autocomplete="off">
-                    </div>
-                    
-                    <div class="search-controls">
-                        <select name="searchField" class="search-select">
-                            <option value="all" <?= $searchField === 'all' ? 'selected' : '' ?>>All Fields</option>
+                        <select name="searchField" class="search-field-select">
+                            <option value="all" <?= $searchField === 'all' ? 'selected' : '' ?>>All</option>
                             <option value="title" <?= $searchField === 'title' ? 'selected' : '' ?>>Title</option>
                             <option value="author" <?= $searchField === 'author' ? 'selected' : '' ?>>Author</option>
-                            <option value="published" <?= $searchField === 'published' ? 'selected' : '' ?>>Published</option>
                             <option value="genre" <?= $searchField === 'genre' ? 'selected' : '' ?>>Genre</option>
                         </select>
-                        <button type="submit" class="search-button">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                            </svg>
-                            Search
-                        </button>
                     </div>
-                </div>
-            </form>
-            
-            <!-- Controls Bar -->
-            <div class="controls-bar">
-                <div class="sort-controls">
-                    <select id="sortBy">
-                        <option value="title" <?= $sortBy === 'title' ? 'selected' : '' ?>>Title</option>
-                        <option value="author" <?= $sortBy === 'author' ? 'selected' : '' ?>>Author</option>
-                        <option value="published" <?= $sortBy === 'published' ? 'selected' : '' ?>>Published</option>
-                        <option value="genre" <?= $sortBy === 'genre' ? 'selected' : '' ?>>Genre</option>
-                    </select>
-                    
-                    <select id="sortOrder">
-                        <option value="asc" <?= $sortOrder === 'asc' ? 'selected' : '' ?>>A → Z</option>
-                        <option value="desc" <?= $sortOrder === 'desc' ? 'selected' : '' ?>>Z → A</option>
-                    </select>
+                </form>
+
+                <!-- Controls -->
+                <div class="header-controls">
+                    <div class="sort-controls">
+                        <select id="sortBy" title="Sort by">
+                            <option value="title" <?= $sortBy === 'title' ? 'selected' : '' ?>>Title</option>
+                            <option value="author" <?= $sortBy === 'author' ? 'selected' : '' ?>>Author</option>
+                            <option value="published" <?= $sortBy === 'published' ? 'selected' : '' ?>>Date</option>
+                            <option value="genre" <?= $sortBy === 'genre' ? 'selected' : '' ?>>Genre</option>
+                        </select>
+                        <select id="sortOrder" title="Sort order">
+                            <option value="asc" <?= $sortOrder === 'asc' ? 'selected' : '' ?>>A-Z</option>
+                            <option value="desc" <?= $sortOrder === 'desc' ? 'selected' : '' ?>>Z-A</option>
+                        </select>
+                    </div>
+
+                    <button id="theme-toggle" aria-label="Toggle theme" title="Toggle dark/light mode">
+                        <svg class="sun-icon" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
+                        </svg>
+                        <svg class="moon-icon" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>
