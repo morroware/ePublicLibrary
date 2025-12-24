@@ -1,4 +1,89 @@
 <?php
+// ---------- SIMPLE SHA256 PASSWORD GUARD ----------
+session_start();
+
+// Replace with the sha256 hash of your chosen password.
+$PASSWORD_HASH = 'PUT_YOUR_SHA256_HASH_HERE';
+
+// Optional: set a session name to avoid collisions if you host multiple tools.
+if (session_name() !== 'bookshelf_sess') {
+    session_name('bookshelf_sess');
+}
+
+// Simple logout handler
+if (isset($_GET['logout'])) {
+    $_SESSION = [];
+    if (ini_get("session.use_cookies")) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000, $params["path"], $params["domain"], $params["secure"], $params["httponly"]);
+    }
+    session_destroy();
+    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?'));
+    exit;
+}
+
+// If not authenticated, show login (and handle login POST)
+if (empty($_SESSION['is_authed'])) {
+    $loginError = '';
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password'])) {
+        $input = (string)($_POST['password'] ?? '');
+        if (hash_equals($PASSWORD_HASH, hash('sha256', $input))) {
+            $_SESSION['is_authed'] = true;
+            // Redirect to avoid form resubmission and to ensure JS uploader sees a normal page
+            header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?'));
+            exit;
+        } else {
+            $loginError = 'Invalid password.';
+        }
+    }
+
+    // Minimal login page (Tailwind included)
+    ?>
+    <!DOCTYPE html>
+    <html lang="en" class="dark">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Login - BookShelf</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                darkMode: 'class',
+                theme: { extend: { colors: { gray: { 900: '#1a202c' } } } }
+            }
+        </script>
+    </head>
+    <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex items-center justify-center">
+        <div class="w-full max-w-sm p-6 rounded-2xl shadow-xl bg-white/70 dark:bg-gray-800/70 backdrop-blur">
+            <h1 class="text-2xl font-bold text-purple-600 dark:text-purple-300 mb-4">BookShelf</h1>
+            <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">Please enter the password to continue.</p>
+            <?php if ($loginError): ?>
+                <div class="mb-4 p-2 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                    <?= htmlspecialchars($loginError, ENT_QUOTES, 'UTF-8') ?>
+                </div>
+            <?php endif; ?>
+            <form method="post" class="space-y-3">
+                <label class="block">
+                    <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</span>
+                    <input type="password" name="password" required
+                           class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                </label>
+                <button type="submit"
+                        class="w-full px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors">
+                    Sign in
+                </button>
+            </form>
+        </div>
+    </body>
+    </html>
+    <?php
+    exit;
+}
+// ---------- END PASSWORD GUARD ----------
+
+
+// -------- Your existing uploader code starts here --------
+
 // Enable error reporting
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -87,7 +172,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
@@ -112,7 +196,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-200">
     <div class="container mx-auto px-4 py-8">
-        <h1 class="text-4xl font-bold text-purple-600 dark:text-purple-400 mb-8">Upload EPUBs</h1>
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-4xl font-bold text-purple-600 dark:text-purple-400">Upload EPUBs</h1>
+            <a href="?logout=1" class="text-sm text-gray-600 dark:text-gray-300 hover:underline">Logout</a>
+        </div>
+
         <form id="uploadForm" action="" method="post" enctype="multipart/form-data" class="mb-8">
             <div class="mb-4">
                 <label for="file" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select EPUB file(s) or a folder:</label>
