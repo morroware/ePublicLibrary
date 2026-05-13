@@ -1,5 +1,125 @@
 # Changelog
 
+## 1.3.0 — Polish
+
+Phase 4 — closes out the original four-phase plan. Adds reading-session
+tracking and the stats dashboard it feeds, an immersive reader mode plus a
+continuous-scroll layout, offline support via a service worker, admin
+quality-of-life improvements (health checks, bulk actions), and email-based
+password recovery with a flexible mailer.
+
+### Added
+
+- **Reading session tracking**
+  - `ReadingSessionRepository` class with start / heartbeat / aggregations
+    (`totals`, `dailyTotals`, `dayStreak`, `topBooks`, `topGenres`,
+    `recentSessions`).
+  - `api/sessions.php` exposes `start` and `heartbeat` verbs (auth required).
+  - `assets/js/reader/sessions.js` opens a session on reader boot, beats
+    every 30 s, and closes via `navigator.sendBeacon` on pagehide /
+    beforeunload so the tail of each session is captured even on tab close.
+    Idle-aware — drops big gaps from the duration estimate.
+  - CSRF helper accepts `?_token=` query string as a fallback so beacons
+    (which can't set custom headers) can authenticate.
+
+- **Reading stats dashboard** (`stats.php`)
+  - 8 top-line tiles: time read, books opened / finished, day streak,
+    sessions, words read (estimate), highlights, reviews posted.
+  - 30-day bar chart of daily reading time.
+  - Most-read books rank list (with covers).
+  - Top genres rank list.
+  - Recent sessions table.
+  - Linked from the user menu (Your shelves · Reading stats · Advanced
+    search · Account).
+
+- **Immersive mode** in the reader
+  - New `Immersive mode` button in the reader header (`btn-immersive`).
+  - `.is-immersive` class on the reader shell hides the header, the
+    progress info, and the TTS toolbar; leaves a 3 px progress strip.
+  - Center-tap reveals controls briefly; Escape (or Ctrl+Shift+I, F11) exits.
+  - Preference persisted in `localStorage`.
+
+- **Continuous-scroll layout** option in reader Settings → Layout.
+  - Toggle changes the epub.js rendition `flow` from `paginated` to
+    `scrolled-doc`. Reloads the reader to re-create the rendition since
+    flow swaps can't happen mid-stream.
+
+- **Service worker** for offline reading
+  - `sw.js` at the install root with multi-strategy caching:
+    cache-first for the app shell (CSS / JS / fonts / vendored libs),
+    network-first for HTML with `offline.html` fallback,
+    stale-while-revalidate for cover images,
+    cache-first with a 3-book quota for EPUB streams
+    (`api/download.php?stream=1`).
+  - `assets/js/shared/sw-register.js` registers from both library and
+    reader pages. Subdirectory-aware (scope = install base).
+  - `.htaccess` adds a `no-cache` rule for `sw.js` plus a
+    `Service-Worker-Allowed: /` header.
+  - `offline.html` is a tiny self-contained fallback page (no dependencies).
+
+- **Admin health check** (`admin/health.php`)
+  - Missing EPUB files: DB rows with no file on disk.
+  - Missing covers: books without a cover image on disk.
+  - **Orphan EPUB files**: on-disk files with no DB row, with a
+    checkbox-selectable bulk delete action (CSRF-confirmed).
+  - Orphan covers (informational; listed but not auto-deleted).
+  - New `Health` entry in the admin sidebar.
+
+- **Bulk actions** on `admin/books.php`
+  - Checkboxes in every row + a "Select all" header checkbox.
+  - Sticky bulk toolbar shows selection count + action dropdown
+    (Publish / Hide / Mark removed / Delete) + Apply button.
+  - Confirmation prompt before the action runs; delete prompt is
+    stricter.
+  - Admin list now shows **every** book status (Phase 2 added the
+    filter to hide non-published books in public views).
+
+- **Email-based password reset**
+  - `forgot-password.php` — request a reset link by email. Always shows
+    "if that email is registered, a link is on its way" regardless of
+    whether the address exists (no account enumeration). Per-IP rate
+    limited.
+  - `reset-password.php` — land here from the email, set a new password
+    (NIST 800-63B-validated). On success: revokes all remember-me tokens
+    for the user and signs them out everywhere.
+  - `Mailer` class with three drivers:
+    - `log` (default): writes to `storage/logs/mail.log` — safe for dev.
+    - `mail`: PHP's built-in `mail()` — works on most cPanel hosts.
+    - `smtp`: uses PHPMailer if vendored at
+      `includes/vendor/PHPMailer/`. Reads config from
+      `config('mail.smtp.*')`. Falls back to `log` with a warning if
+      PHPMailer is not present.
+  - Login page gains a "Forgot your password?" link.
+
+### Changed
+
+- `BookRepository::paginate()` accepts an `include_all_status` flag so
+  the admin books page can list hidden/removed entries too.
+- `setup.php` writes the new mail config keys (`smtp.*`); existing
+  installs can hand-edit `includes/config.php` or run setup again with
+  `setup_completed_at = 0`.
+- The reader entry imports two new modules: `sessions.js` and
+  `immersive.js`. Both bail cleanly when their prerequisites are absent
+  (guest user, no immersive button, etc.).
+- `config.example.php` documents the three mail drivers and SMTP fields.
+
+### Notes
+
+- The service worker is HTTPS-only (skips registration on plain HTTP),
+  except on `localhost` / `127.0.0.1` for development.
+- Session-tracking heartbeats are best-effort; if a tab closes before the
+  first beat, the session's `ended_at` stays NULL and `duration_seconds`
+  is 0. Stats aggregations only use rows with non-zero duration.
+- `epub.js` is **still pinned at 0.3.93**. The upgrade is now the
+  primary item left on the roadmap — see below.
+
+### Migration notes
+
+No new SQL migrations. The `reading_sessions`, `auth_tokens`, and
+`highlights` tables have been in place since Phase 1.
+
+---
+
 ## 1.2.0 — Reader features
 
 Phase 3. The reader catches up to commercial parity: highlights and
@@ -268,6 +388,13 @@ a MySQL-backed data layer.
 
 ## Roadmap
 
-- **1.3.0 — Polish**: Reading stats dashboard, reading session
-  tracking, immersive mode, offline reading via service worker, admin
-  bulk actions, email-based password reset, epub.js upgrade.
+The original four-phase plan is complete. Possible follow-ups:
+
+- **epub.js upgrade** to the current release. Highlights are stored as
+  stable CFI ranges so the upgrade should not invalidate saved data, but
+  needs a corpus smoke-test.
+- **PHPMailer vendoring** as a first-class install step (the Mailer class
+  detects it; instructions are in `INSTALL.md`).
+- **Light test harness** runnable from `/admin/run-tests.php` for
+  smoke-testing on shared hosts that don't run CI.
+- **Two-factor authentication** for admins.

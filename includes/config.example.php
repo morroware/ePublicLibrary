@@ -77,11 +77,23 @@ return [
         'max_upload_mb' => 100,
     ],
 
-    // ---- Mail (Phase 4) -----------------------------------------------------
+    // ---- Mail ---------------------------------------------------------------
+    // Drivers:
+    //   'log'  → writes to storage/logs/mail.log (default; safe for dev)
+    //   'mail' → PHP's built-in mail() — works on most cPanel hosts
+    //   'smtp' → uses PHPMailer if vendored at includes/vendor/PHPMailer/
+    //            (see INSTALL.md for the one-time vendor command)
     'mail' => [
-        'driver'    => 'log',   // 'log' | 'smtp' (Phase 4)
+        'driver'    => 'log',
         'from_addr' => 'no-reply@example.org',
         'from_name' => 'ePublicLibrary',
+        'smtp' => [
+            'host'       => '',
+            'port'       => 587,
+            'username'   => '',
+            'password'   => '',
+            'encryption' => 'tls',  // 'tls' | 'ssl' | ''
+        ],
     ],
 
     // ---- Setup sentinel -----------------------------------------------------

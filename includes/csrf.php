@@ -35,14 +35,28 @@ function csrf_field(): string
     return '<input type="hidden" name="_token" value="' . e(csrf_token()) . '">';
 }
 
-/** Return the token from the current request (POST form or X-CSRF-Token). */
+/** Return the token from the current request (POST form, X-CSRF-Token, or
+ *  the `_token` query string).
+ *
+ *  Query-string fallback exists so navigator.sendBeacon (which can't set
+ *  custom headers and may carry a JSON blob that doesn't populate $_POST)
+ *  can still authenticate the final session-end beacon. Only relevant for
+ *  POST/PATCH/PUT/DELETE — GET skips CSRF altogether in
+ *  csrf_verify_or_abort.
+ */
 function csrf_request_token(): ?string
 {
     if (!empty($_POST['_token'])) {
         return (string) $_POST['_token'];
     }
     $hdr = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
-    return $hdr !== null ? (string) $hdr : null;
+    if ($hdr !== null && $hdr !== '') {
+        return (string) $hdr;
+    }
+    if (!empty($_GET['_token'])) {
+        return (string) $_GET['_token'];
+    }
+    return null;
 }
 
 /** Verify or abort with 419. Call from any POST/PUT/PATCH/DELETE handler. */

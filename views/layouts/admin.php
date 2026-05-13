@@ -13,6 +13,7 @@ $navItems = [
     ['key' => 'upload',     'label' => 'Upload',       'href' => url('admin/upload.php')],
     ['key' => 'users',      'label' => 'Users',        'href' => url('admin/users.php')],
     ['key' => 'thumbnails', 'label' => 'Thumbnails',   'href' => url('admin/thumbnails.php')],
+    ['key' => 'health',     'label' => 'Health',       'href' => url('admin/health.php')],
     ['key' => 'audit',      'label' => 'Audit log',    'href' => url('admin/audit.php')],
     ['key' => 'migrate',    'label' => 'Migrations',   'href' => url('admin/migrate.php')],
 ];

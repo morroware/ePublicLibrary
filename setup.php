@@ -202,7 +202,16 @@ function setup_run(): array
             'covers_path'   => __DIR__ . '/assets/covers',
             'max_upload_mb' => 100,
         ],
-        'mail' => ['driver' => 'log', 'from_addr' => 'no-reply@example.org', 'from_name' => $state['site']['app_name']],
+        'mail' => [
+            'driver'    => 'log',
+            'from_addr' => 'no-reply@example.org',
+            'from_name' => $state['site']['app_name'],
+            'smtp' => [
+                'host' => '', 'port' => 587,
+                'username' => '', 'password' => '',
+                'encryption' => 'tls',
+            ],
+        ],
         'setup_completed_at' => 0,
     ];
     $writeResult = setup_write_config($configPath, $cfg);

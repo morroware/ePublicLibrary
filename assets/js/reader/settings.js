@@ -7,11 +7,12 @@ import { applyRenditionTheme } from './viewer.js';
 
 const STORAGE_KEY = 'elib-reader-settings';
 const DEFAULTS = {
-    fontSize:   100,
-    fontFamily: 'serif',
-    lineHeight: 1.6,
-    theme:      'auto',
-    margins:    'normal',
+    fontSize:         100,
+    fontFamily:       'serif',
+    lineHeight:       1.6,
+    theme:            'auto',
+    margins:          'normal',
+    continuousScroll: false,
 };
 
 const FONT_STACKS = {
@@ -134,6 +135,24 @@ export function initSettings(ctx) {
             settings.margins = mgInput.value;
             save(settings);
             applyAll();
+        });
+    }
+
+    // Continuous scroll toggle — flow change requires re-rendering the
+    // rendition, which is easiest as a page reload.
+    const csInput = document.getElementById('setting-continuous-scroll');
+    if (csInput) {
+        csInput.checked = !!settings.continuousScroll;
+        csInput.addEventListener('change', () => {
+            settings.continuousScroll = csInput.checked;
+            save(settings);
+            // Brief flash so the user knows the change is happening
+            const toast = document.getElementById('reader-toast');
+            if (toast) {
+                toast.textContent = 'Reloading reader…';
+                toast.hidden = false;
+            }
+            setTimeout(() => { window.location.reload(); }, 250);
         });
     }
 }

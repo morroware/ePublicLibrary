@@ -39,6 +39,9 @@ defined('APP_BOOTED') or exit;
     </form>
 
     <p class="auth-alt">
+        <a href="<?= e(url('forgot-password.php')) ?>">Forgot your password?</a>
+    </p>
+    <p class="auth-alt">
         New here? <a href="<?= e(url('register.php')) ?>">Create an account</a>
     </p>
     <p class="auth-alt">

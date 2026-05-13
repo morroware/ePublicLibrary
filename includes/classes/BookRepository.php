@@ -84,7 +84,10 @@ class BookRepository
         // `relevance` is special: requires FULLTEXT; falls back to title if unavailable.
         $sortCol = $allowedSort[$sortBy] ?? 'title';
 
-        $where  = ["status = 'published'"];
+        $where  = [];
+        if (empty($opts['include_all_status'])) {
+            $where[] = "status = 'published'";
+        }
         $params = [];
         $selectScore = '';
         $useFulltext = false;
@@ -152,7 +155,7 @@ class BookRepository
             $params['f_min_rating'] = (float) $opts['min_rating'];
         }
 
-        $whereSql = implode(' AND ', $where);
+        $whereSql = $where ? implode(' AND ', $where) : '1';
 
         // ---- Count ----
         $countStmt = db()->prepare("SELECT COUNT(*) FROM books WHERE {$whereSql}");

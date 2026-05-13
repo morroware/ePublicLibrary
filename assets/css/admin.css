@@ -237,3 +237,44 @@
     .admin-user { display: none; }
     .admin-main { padding: var(--space-4); }
 }
+
+/* =========================================================================
+   Phase 4 — bulk toolbar + health cards
+   ========================================================================= */
+
+.bulk-toolbar {
+    display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-3);
+    background: var(--accent-50);
+    border: 1px solid color-mix(in srgb, var(--accent-500) 35%, transparent);
+    border-radius: var(--radius-md);
+    position: sticky; top: 0; z-index: 5;
+}
+.bulk-toolbar[hidden] { display: none; }
+.bulk-count {
+    font-weight: 600; color: var(--accent-700);
+    font-size: var(--text-sm);
+}
+.bulk-toolbar select {
+    flex: 0 0 auto; width: auto; padding: 0.45rem 0.6rem;
+}
+.bulk-cell { width: 28px; text-align: center; }
+.bulk-cell input[type=checkbox] { transform: translateY(2px); }
+
+.health-card { margin-bottom: var(--space-5); }
+.health-card h2 small {
+    font-weight: 400; margin-left: var(--space-2);
+}
+.health-list {
+    list-style: none; padding: 0; margin: var(--space-3) 0 0;
+    display: grid; gap: var(--space-2);
+    max-height: 360px; overflow-y: auto;
+    font-size: var(--text-sm);
+}
+.health-list li {
+    padding: var(--space-2) var(--space-3);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+}
+.health-list small { display: block; margin-top: 2px; }

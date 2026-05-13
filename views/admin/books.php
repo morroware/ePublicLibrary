@@ -24,44 +24,107 @@ defined('APP_BOOTED') or exit;
         <p><?= $searchTerm ? 'Nothing matches that search.' : 'Upload an EPUB to get started.' ?></p>
     </div>
 <?php else: ?>
-    <table class="admin-table">
-        <thead>
-            <tr>
-                <th class="cover-cell">Cover</th>
-                <th>Title</th>
-                <th>Author</th>
-                <th>Status</th>
-                <th>Added</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($books as $b): ?>
+    <form method="post" action="<?= e(url('admin/books.php')) ?>" id="bulk-form"
+          onsubmit="return confirmBulk(this);">
+        <?= csrf_field() ?>
+        <input type="hidden" name="verb" value="bulk">
+
+        <div class="bulk-toolbar" hidden id="bulk-toolbar">
+            <span class="bulk-count"><span id="bulk-count">0</span> selected</span>
+            <select name="bulk_action" aria-label="Bulk action" required>
+                <option value="">Choose action…</option>
+                <option value="publish">Publish</option>
+                <option value="hide">Hide</option>
+                <option value="remove">Mark removed</option>
+                <option value="delete">Delete (permanent)</option>
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="bulk-clear">Cancel</button>
+        </div>
+
+        <table class="admin-table">
+            <thead>
                 <tr>
-                    <td class="cover-cell">
-                        <?php if (!empty($b['cover_path'])): ?>
-                            <img src="<?= e(asset($b['cover_path'])) ?>" alt="">
-                        <?php else: ?>
-                            <div class="cover-placeholder" aria-hidden="true"></div>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <a href="<?= e(url('admin/books.php?action=edit&id=' . $b['id'])) ?>">
-                            <?= e($b['title']) ?>
-                        </a>
-                    </td>
-                    <td><?= e($b['author']) ?></td>
-                    <td><span class="badge badge-<?= e($b['status']) ?>"><?= e($b['status']) ?></span></td>
-                    <td><?= e(date('M j, Y', strtotime($b['created_at']))) ?></td>
-                    <td class="actions-cell">
-                        <a href="<?= e(url('book.php?b=' . $b['uuid'])) ?>" title="View">View</a>
-                        <a href="<?= e(url('read.php?b=' . $b['uuid'])) ?>" title="Read">Read</a>
-                        <a href="<?= e(url('admin/books.php?action=edit&id=' . $b['id'])) ?>" title="Edit">Edit</a>
-                    </td>
+                    <th class="bulk-cell"><input type="checkbox" id="bulk-all" aria-label="Select all"></th>
+                    <th class="cover-cell">Cover</th>
+                    <th>Title</th>
+                    <th>Author</th>
+                    <th>Status</th>
+                    <th>Added</th>
+                    <th></th>
                 </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                <?php foreach ($books as $b): ?>
+                    <tr>
+                        <td class="bulk-cell">
+                            <input type="checkbox" name="ids[]" value="<?= e((string) $b['id']) ?>"
+                                   class="bulk-check" aria-label="Select <?= e($b['title']) ?>">
+                        </td>
+                        <td class="cover-cell">
+                            <?php if (!empty($b['cover_path'])): ?>
+                                <img src="<?= e(asset($b['cover_path'])) ?>" alt="">
+                            <?php else: ?>
+                                <div class="cover-placeholder" aria-hidden="true"></div>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <a href="<?= e(url('admin/books.php?action=edit&id=' . $b['id'])) ?>">
+                                <?= e($b['title']) ?>
+                            </a>
+                        </td>
+                        <td><?= e($b['author']) ?></td>
+                        <td><span class="badge badge-<?= e($b['status']) ?>"><?= e($b['status']) ?></span></td>
+                        <td><?= e(date('M j, Y', strtotime($b['created_at']))) ?></td>
+                        <td class="actions-cell">
+                            <a href="<?= e(url('book.php?b=' . $b['uuid'])) ?>" title="View">View</a>
+                            <a href="<?= e(url('read.php?b=' . $b['uuid'])) ?>" title="Read">Read</a>
+                            <a href="<?= e(url('admin/books.php?action=edit&id=' . $b['id'])) ?>" title="Edit">Edit</a>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </form>
+
+    <script nonce="<?= e(csp_nonce()) ?>">
+        (function () {
+            const form     = document.getElementById('bulk-form');
+            const all      = document.getElementById('bulk-all');
+            const toolbar  = document.getElementById('bulk-toolbar');
+            const counter  = document.getElementById('bulk-count');
+            const clearBtn = document.getElementById('bulk-clear');
+            const checks   = form.querySelectorAll('.bulk-check');
+
+            function refresh() {
+                const sel = Array.from(checks).filter(c => c.checked).length;
+                counter.textContent = sel;
+                toolbar.hidden = sel === 0;
+                if (sel === 0) all.checked = false;
+                else if (sel === checks.length) all.checked = true;
+                else { all.indeterminate = true; all.checked = false; return; }
+                all.indeterminate = false;
+            }
+            checks.forEach(c => c.addEventListener('change', refresh));
+            all.addEventListener('change', () => {
+                checks.forEach(c => { c.checked = all.checked; });
+                refresh();
+            });
+            clearBtn.addEventListener('click', () => {
+                checks.forEach(c => { c.checked = false; });
+                refresh();
+            });
+            window.confirmBulk = function (formEl) {
+                const action = formEl.elements['bulk_action'].value;
+                if (!action) { alert('Choose a bulk action.'); return false; }
+                const sel = Array.from(checks).filter(c => c.checked).length;
+                const msg = action === 'delete'
+                    ? `Permanently delete ${sel} book(s) and their files?`
+                    : `Apply "${action}" to ${sel} book(s)?`;
+                return confirm(msg);
+            };
+        })();
+    </script>
 
     <?php if ($pages > 1): ?>
         <nav class="pagination" aria-label="Books pagination">
