@@ -283,12 +283,23 @@ main { padding: var(--space-8) var(--space-4); min-height: calc(100vh - 80px); }
     .logo-text { display: none; }
     .search-container { order: 3; flex: 1 0 100%; }
     .header-controls { margin-left: auto; }
-    .sort-controls select:nth-child(1) { display: none; } /* Hide sort-by on mobile; keep order */
+    /* Sort controls stay reachable on mobile — collapsed into a compact second row */
+    .sort-controls { order: 4; flex: 1 0 100%; gap: var(--space-2); }
+    .sort-controls select {
+        flex: 1; padding: 0.55rem 0.65rem; font-size: var(--text-sm);
+        min-height: 44px;  /* tap target */
+    }
     main { padding: var(--space-6) var(--space-3); }
 }
 @media (max-width: 480px) {
-    .sort-controls { display: none; }
     .header-container { padding: 0.5rem 0.75rem; }
+}
+
+/* Ensure all icon buttons hit the 44x44 minimum on touch devices */
+@media (pointer: coarse) {
+    .btn, #theme-toggle, .reader-btn, .reader-back, .reader-panel-close {
+        min-height: 44px; min-width: 44px;
+    }
 }
 
 /* Account page */

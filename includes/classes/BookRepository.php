@@ -43,14 +43,25 @@ class BookRepository
     /* --------------- listing / search --------------- */
 
     /**
-     * Paginated list with optional search + sort.
+     * Paginated list with optional search, filters, and sort.
      *
-     * Returns [
-     *   'items' => array of rows,
-     *   'total' => int,
-     *   'page'  => int,
-     *   'pages' => int,
-     * ]
+     * Accepted opts (all optional):
+     *   page       int
+     *   per_page   int (1–100)
+     *   search     string — query text
+     *   field      'all' | 'title' | 'author' | 'genre' — restrict where to look
+     *   tag_slug   string — only books tagged with this slug
+     *   language   string — only books in this language code
+     *   year_min   int    — only books with published_date YEAR >= this
+     *   year_max   int    — only books with published_date YEAR <= this
+     *   min_rating float  — only books with avg_rating >= this (and review_count > 0)
+     *   sort_by    'title' | 'author' | 'published' | 'created' | 'rating' | 'popular' | 'relevance'
+     *   sort_dir   'asc' | 'desc'
+     *
+     * For 'all'-field searches with 3+ char terms, uses FULLTEXT MATCH ... AGAINST
+     * in BOOLEAN MODE. Shorter terms (and other fields) fall back to LIKE.
+     *
+     * Returns ['items' => [...], 'total' => int, 'page' => int, 'pages' => int, 'per_page' => int].
      */
     public static function paginate(array $opts = []): array
     {
@@ -61,71 +72,213 @@ class BookRepository
         $sortBy  = (string) ($opts['sort_by'] ?? 'title');
         $sortDir = strtolower((string) ($opts['sort_dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
 
-        $allowedSort = ['title' => 'title', 'author' => 'author', 'published' => 'published_date',
-                        'created' => 'created_at', 'updated' => 'updated_at'];
+        $allowedSort = [
+            'title'     => 'title',
+            'author'    => 'author',
+            'published' => 'published_date',
+            'created'   => 'created_at',
+            'updated'   => 'updated_at',
+            'rating'    => 'avg_rating',
+            'popular'   => 'read_count',
+        ];
+        // `relevance` is special: requires FULLTEXT; falls back to title if unavailable.
         $sortCol = $allowedSort[$sortBy] ?? 'title';
 
         $where  = ["status = 'published'"];
         $params = [];
+        $selectScore = '';
+        $useFulltext = false;
 
+        // ---- Text search ----
         if ($search !== '') {
-            $like = '%' . self::escapeLike($search) . '%';
-            switch ($field) {
-                case 'title':
-                    $where[] = 'title LIKE ?';
-                    $params[] = $like;
-                    break;
-                case 'author':
-                    $where[] = 'author LIKE ?';
-                    $params[] = $like;
-                    break;
-                case 'genre':
-                    // Genre filtering goes via tags — fall through to subquery
-                    $where[] = 'id IN (SELECT bt.book_id FROM book_tags bt
-                                       JOIN tags t ON t.id = bt.tag_id
-                                       WHERE t.name LIKE ? OR t.slug LIKE ?)';
-                    $params[] = $like;
-                    $params[] = $like;
-                    break;
-                case 'all':
-                default:
-                    $where[] = '(title LIKE ? OR author LIKE ? OR description LIKE ?)';
-                    $params[] = $like;
-                    $params[] = $like;
-                    $params[] = $like;
-                    break;
+            $bool = self::toFulltextBoolean($search);
+
+            if ($field === 'all' && mb_strlen($search) >= 3) {
+                // FULLTEXT path — leverages ft_books_search index on (title, author, description)
+                $selectScore = ", MATCH(title, author, description) AGAINST(:ft_term IN BOOLEAN MODE) AS _score";
+                $where[] = "MATCH(title, author, description) AGAINST(:ft_term IN BOOLEAN MODE)";
+                $params['ft_term'] = $bool;
+                $useFulltext = true;
+            } else {
+                $like = '%' . self::escapeLike($search) . '%';
+                switch ($field) {
+                    case 'title':
+                        $where[]      = 'title LIKE :s_title';
+                        $params['s_title'] = $like;
+                        break;
+                    case 'author':
+                        $where[]       = 'author LIKE :s_author';
+                        $params['s_author'] = $like;
+                        break;
+                    case 'genre':
+                        $where[] = 'id IN (SELECT bt.book_id FROM book_tags bt
+                                           JOIN tags t ON t.id = bt.tag_id
+                                           WHERE t.name LIKE :s_tag1 OR t.slug LIKE :s_tag2)';
+                        $params['s_tag1'] = $like;
+                        $params['s_tag2'] = $like;
+                        break;
+                    case 'all':
+                    default:
+                        $where[] = '(title LIKE :s_all1 OR author LIKE :s_all2 OR description LIKE :s_all3)';
+                        $params['s_all1'] = $like;
+                        $params['s_all2'] = $like;
+                        $params['s_all3'] = $like;
+                        break;
+                }
             }
+        }
+
+        // ---- Filters ----
+        if (!empty($opts['tag_slug'])) {
+            $where[] = 'id IN (SELECT bt.book_id FROM book_tags bt
+                               JOIN tags t ON t.id = bt.tag_id
+                               WHERE t.slug = :f_tag)';
+            $params['f_tag'] = (string) $opts['tag_slug'];
+        }
+        if (!empty($opts['language'])) {
+            $where[] = 'language = :f_lang';
+            $params['f_lang'] = (string) $opts['language'];
+        }
+        if (isset($opts['year_min']) && $opts['year_min'] !== '' && (int) $opts['year_min'] > 0) {
+            $where[] = "CAST(LEFT(published_date, 4) AS UNSIGNED) >= :f_year_min";
+            $params['f_year_min'] = (int) $opts['year_min'];
+        }
+        if (isset($opts['year_max']) && $opts['year_max'] !== '' && (int) $opts['year_max'] > 0) {
+            $where[] = "CAST(LEFT(published_date, 4) AS UNSIGNED) <= :f_year_max";
+            $params['f_year_max'] = (int) $opts['year_max'];
+        }
+        if (isset($opts['min_rating']) && (float) $opts['min_rating'] > 0) {
+            $where[] = 'avg_rating >= :f_min_rating AND review_count > 0';
+            $params['f_min_rating'] = (float) $opts['min_rating'];
         }
 
         $whereSql = implode(' AND ', $where);
 
+        // ---- Count ----
         $countStmt = db()->prepare("SELECT COUNT(*) FROM books WHERE {$whereSql}");
-        $countStmt->execute($params);
+        foreach ($params as $k => $v) {
+            $countStmt->bindValue(':' . $k, $v);
+        }
+        $countStmt->execute();
         $total = (int) $countStmt->fetchColumn();
 
-        $pages = max(1, (int) ceil($total / $perPage));
-        $page  = min($page, $pages);
+        $pages  = max(1, (int) ceil($total / $perPage));
+        $page   = min($page, $pages);
         $offset = ($page - 1) * $perPage;
 
-        $listSql = "SELECT * FROM books WHERE {$whereSql}
-                    ORDER BY {$sortCol} {$sortDir}, id ASC
-                    LIMIT ? OFFSET ?";
-        $listStmt = db()->prepare($listSql);
-        $i = 1;
-        foreach ($params as $p) {
-            $listStmt->bindValue($i++, $p);
+        // ---- ORDER BY ----
+        $orderBy = "{$sortCol} {$sortDir}, id ASC";
+        if ($sortBy === 'relevance') {
+            $orderBy = $useFulltext ? "_score DESC, id ASC" : "title ASC, id ASC";
         }
-        $listStmt->bindValue($i++, $perPage, PDO::PARAM_INT);
-        $listStmt->bindValue($i,   $offset,  PDO::PARAM_INT);
+
+        // ---- List ----
+        $listSql = "SELECT *{$selectScore} FROM books WHERE {$whereSql}
+                    ORDER BY {$orderBy}
+                    LIMIT :pp_limit OFFSET :pp_offset";
+        $listStmt = db()->prepare($listSql);
+        foreach ($params as $k => $v) {
+            $listStmt->bindValue(':' . $k, $v);
+        }
+        $listStmt->bindValue(':pp_limit',  $perPage, PDO::PARAM_INT);
+        $listStmt->bindValue(':pp_offset', $offset,  PDO::PARAM_INT);
         $listStmt->execute();
 
         return [
-            'items' => $listStmt->fetchAll(),
-            'total' => $total,
-            'page'  => $page,
-            'pages' => $pages,
+            'items'    => $listStmt->fetchAll(),
+            'total'    => $total,
+            'page'     => $page,
+            'pages'    => $pages,
             'per_page' => $perPage,
         ];
+    }
+
+    /** Recently added books (catalog newcomers). */
+    public static function recentlyAdded(int $limit = 12): array
+    {
+        $stmt = db()->prepare("SELECT * FROM books WHERE status = 'published'
+                              ORDER BY created_at DESC, id DESC LIMIT ?");
+        $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /** Top-rated books that have meaningful review volume. */
+    public static function topRated(int $limit = 12, int $minReviews = 3): array
+    {
+        $stmt = db()->prepare("SELECT * FROM books
+                              WHERE status = 'published' AND review_count >= ?
+                              ORDER BY avg_rating DESC, review_count DESC, id ASC LIMIT ?");
+        $stmt->bindValue(1, $minReviews, PDO::PARAM_INT);
+        $stmt->bindValue(2, $limit,      PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /** Most-read books — uses the read_count counter incremented on read.php load. */
+    public static function mostRead(int $limit = 12): array
+    {
+        $stmt = db()->prepare("SELECT * FROM books WHERE status = 'published'
+                              ORDER BY read_count DESC, id ASC LIMIT ?");
+        $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /** Books sharing any tag with the given book (lightweight related-books). */
+    public static function relatedTo(int $bookId, int $limit = 6): array
+    {
+        $stmt = db()->prepare("SELECT b.*, COUNT(bt2.tag_id) AS shared_tags
+                              FROM book_tags bt1
+                              JOIN book_tags bt2 ON bt1.tag_id = bt2.tag_id AND bt2.book_id <> bt1.book_id
+                              JOIN books b ON b.id = bt2.book_id
+                              WHERE bt1.book_id = ? AND b.status = 'published'
+                              GROUP BY b.id
+                              ORDER BY shared_tags DESC, b.avg_rating DESC, b.id ASC
+                              LIMIT ?");
+        $stmt->bindValue(1, $bookId, PDO::PARAM_INT);
+        $stmt->bindValue(2, $limit,  PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /** Distinct language codes present in the catalog (for filter dropdowns). */
+    public static function distinctLanguages(): array
+    {
+        return db()->query("SELECT DISTINCT language FROM books
+                            WHERE status='published' AND language IS NOT NULL AND language <> ''
+                            ORDER BY language")->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    /** Min/max publication years (for year range UI). */
+    public static function yearRange(): array
+    {
+        $row = db()->query("SELECT MIN(CAST(LEFT(published_date, 4) AS UNSIGNED)) AS y_min,
+                                   MAX(CAST(LEFT(published_date, 4) AS UNSIGNED)) AS y_max
+                            FROM books
+                            WHERE status='published' AND published_date REGEXP '^[0-9]{4}'")
+                   ->fetch();
+        return [
+            'min' => $row && $row['y_min'] ? (int) $row['y_min'] : null,
+            'max' => $row && $row['y_max'] ? (int) $row['y_max'] : null,
+        ];
+    }
+
+    /**
+     * Convert a free-form search string into a safe FULLTEXT BOOLEAN MODE query.
+     * Each word becomes a prefix-match (+word*); special chars stripped.
+     */
+    private static function toFulltextBoolean(string $term): string
+    {
+        $clean = preg_replace('/[+\-<>()~*"@]/u', ' ', $term);
+        $words = preg_split('/\s+/u', trim((string) $clean), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $parts = [];
+        foreach ($words as $w) {
+            if (mb_strlen($w) >= 2) {
+                $parts[] = '+' . $w . '*';
+            }
+        }
+        return $parts ? implode(' ', $parts) : '';
     }
 
     /**

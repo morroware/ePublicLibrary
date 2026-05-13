@@ -1,5 +1,91 @@
 # Changelog
 
+## 1.1.0 — Library UX
+
+Phase 2 of the multi-phase refactor. Builds discovery and curation on top
+of the foundation: rails on the home page, a richer book detail experience,
+user shelves, public reviews, an advanced search with structured filters,
+and genre browse pages.
+
+### Added
+
+- **Continue Reading rail** on the home page for signed-in users. Each
+  card shows cover, title, author, percent complete, and time since last
+  read; click resumes at the saved CFI.
+- **Recently added** and **Top rated** rails on the home page (both
+  guest- and user-visible). Top rated only surfaces books with at least
+  one review.
+- **Home shortcuts** for logged-in users — quick links to *Your shelves*
+  and *Advanced search*.
+- **Book detail page** (`book.php?b={uuid}`) substantially upgraded:
+  - Star ratings + review distribution histogram
+  - Inline write-review form (one review per user per book, edit + delete)
+  - Reviews list with author name, avatar, date, optional title + body
+  - "Add to shelf" dropdown listing all of the user's shelves with
+    membership toggle
+  - "You might also like" rail of related books (shared tags)
+  - Tag chips link out to the genre browse page
+- **Shelves / collections**:
+  - System shelves (Favorites, Want to Read, Finished) auto-seeded per user
+  - Create / rename / delete / public-visibility custom shelves
+  - Shelf mosaic preview (first four covers)
+  - Per-shelf detail view with remove-from-shelf controls
+  - Public shelf URLs (`collection.php?slug=...&user={uuid}`)
+- **Advanced search** (`search.php`) with structured filters:
+  - Free-text query (FULLTEXT `MATCH ... AGAINST` in BOOLEAN MODE)
+  - Genre, language, year range, minimum rating
+  - Sort by relevance / title / author / date / rating / popularity
+- **Genre browse pages** (`genre.php?slug={tag-slug}`) — paginated list of
+  every book tagged with that genre.
+- **Book aggregates on the `books` table**: `review_count` and `avg_rating`
+  columns kept fresh by `AFTER INSERT/UPDATE/DELETE` triggers on reviews
+  (migration 0014). Sub-50ms responses for rating-sorted queries.
+- **`ReviewRepository`** class with upsert/delete/distribution helpers.
+- **`BookRepository`** gains FULLTEXT-aware `paginate()` with filters
+  (`tag_slug`, `language`, `year_min`/`year_max`, `min_rating`,
+  `sort_by` including `relevance`/`rating`/`popular`) plus
+  `recentlyAdded()`, `topRated()`, `mostRead()`, `relatedTo()`,
+  `distinctLanguages()`, `yearRange()`.
+- **`CollectionRepository`** gains full CRUD (`create`, `update`, `delete`),
+  `addBook`, `removeBook`, `reorder`, `forUserAndBook` (powering the
+  Add-to-shelf UI), book listing with position-based ordering.
+- **JSON APIs** for inline UX:
+  - `api/shelves.php` — list user's shelves with membership for a book;
+    POST `{uuid, collection_id, action: add|remove|toggle}` toggles.
+  - `api/reviews.php` — list / upsert / delete reviews. Public GET; POST
+    and DELETE require auth.
+- **Header user menu** gains *Your shelves* and *Advanced search*
+  entries.
+
+### Changed
+
+- **Library home view** now branches: with no search/filter active, shows
+  the rail-driven home page; once any filter is applied, shows the standard
+  paginated grid (which now honors all the new filter parameters).
+- **Pagination partial** accepts a `baseUrl` so it can be reused on
+  `genre.php` and elsewhere without hardcoding `index.php`.
+- **Mobile sort controls** restored: previously hidden via `display:none`
+  on small viewports. Now wrap onto their own row with 44px-min tap
+  targets. A global `@media (pointer: coarse)` rule enforces the 44×44
+  minimum on all icon buttons (theme toggle, reader chrome, etc.).
+- **Book detail wrapper** is now the source of truth for book-page styling
+  (lives in `assets/css/discovery.css`); the inline `<style>` block in
+  the old Phase 1 view is removed.
+
+### Migration notes
+
+- Apply migration `0014_book_aggregates.sql` via `/admin/migrate.php`.
+  The migration backfills `review_count` and `avg_rating` from any
+  existing reviews (no-op on a fresh install) and installs three
+  triggers (`reviews_after_insert`, `_update`, `_delete`) that keep the
+  columns fresh.
+- No data migrations needed for shelves — existing users already have
+  system shelves seeded at registration (Phase 1 behaviour).
+- Triggers are dropped (`DROP TRIGGER IF EXISTS`) and recreated, so
+  re-running the migration is safe.
+
+---
+
 ## 1.0.0 — Foundation release
 
 This release rebuilds the project from the v7.x BookShelf proof-of-concept
@@ -91,9 +177,8 @@ a MySQL-backed data layer.
 
 ## Roadmap
 
-- **1.1.0 — Library UX**: Continue Reading rail, collections, book detail
-  page, advanced search.
 - **1.2.0 — Reader features**: Highlights & annotations, in-book search,
-  dictionary popup, text-to-speech, dyslexia-friendly font.
+  dictionary popup, text-to-speech, dyslexia-friendly font, epub.js upgrade.
 - **1.3.0 — Polish**: Reading stats dashboard, immersive mode, offline
-  reading via service worker, reviews, admin bulk actions.
+  reading via service worker, admin bulk actions, email-based password
+  reset.
