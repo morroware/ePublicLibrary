@@ -55,6 +55,30 @@ export function initSettings(ctx) {
     }
     applyAll();
 
+    // Inject @font-face into every rendered chapter iframe so OpenDyslexic
+    // resolves to a real font file when the user picks it. Falls back to the
+    // next family in the stack if the .woff2 is missing.
+    const APP_BASE = (document.querySelector('meta[name=app-base]')?.content || '').replace(/\/$/, '');
+    rendition.hooks.content.register((contents) => {
+        const doc = contents.document;
+        if (doc.querySelector('style[data-elib-fonts]')) return;
+        const style = doc.createElement('style');
+        style.setAttribute('data-elib-fonts', '1');
+        style.textContent = `
+            @font-face {
+                font-family: 'OpenDyslexic';
+                src: url('${APP_BASE}/assets/fonts/OpenDyslexic-Regular.woff2') format('woff2');
+                font-weight: 400; font-style: normal; font-display: swap;
+            }
+            @font-face {
+                font-family: 'OpenDyslexic';
+                src: url('${APP_BASE}/assets/fonts/OpenDyslexic-Bold.woff2') format('woff2');
+                font-weight: 700; font-style: normal; font-display: swap;
+            }
+        `;
+        doc.head.appendChild(style);
+    });
+
     // Wire UI controls
     const fsInput = document.getElementById('setting-font-size');
     const fsOut   = document.getElementById('font-size-out');

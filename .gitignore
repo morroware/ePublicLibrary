@@ -30,6 +30,12 @@
 # are user-installed (see assets/vendor/README.md).
 /assets/vendor/*.js
 
+# Vendored fonts — see assets/fonts/README.md
+/assets/fonts/*.woff2
+/assets/fonts/*.woff
+/assets/fonts/*.ttf
+/assets/fonts/*.otf
+
 # OS / editor cruft
 .DS_Store
 Thumbs.db

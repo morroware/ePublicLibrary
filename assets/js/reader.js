@@ -12,6 +12,10 @@ import { initBookmarks }    from './reader/bookmarks.js';
 import { initProgress }     from './reader/progress.js';
 import { initToc }          from './reader/toc.js';
 import { initPanels }       from './reader/panels.js';
+import { initHighlights }   from './reader/highlights.js';
+import { initInBookSearch } from './reader/in-book-search.js';
+import { initTts }          from './reader/tts.js';
+import { initDictionary }   from './reader/dictionary.js';
 
 const shell = document.getElementById('reader');
 if (!shell) {
@@ -19,16 +23,16 @@ if (!shell) {
 } else {
     const ctx = {
         shell,
-        bookUuid:    shell.dataset.bookUuid,
-        bookUrl:     shell.dataset.bookUrl,
-        initialCfi:  shell.dataset.initialCfi || null,
-        isGuest:     shell.dataset.isGuest === '1',
-        progressUrl: shell.dataset.progressUrl,
-        bookmarksUrl: shell.dataset.bookmarksUrl,
+        bookUuid:       shell.dataset.bookUuid,
+        bookUrl:        shell.dataset.bookUrl,
+        initialCfi:     shell.dataset.initialCfi || null,
+        isGuest:        shell.dataset.isGuest === '1',
+        progressUrl:    shell.dataset.progressUrl,
+        bookmarksUrl:   shell.dataset.bookmarksUrl,
+        highlightsUrl:  shell.dataset.highlightsUrl,
         viewer: document.getElementById('epub-viewer'),
     };
 
-    // Wait for epub.js globals to be ready (they're loaded with defer).
     function ready() {
         if (typeof ePub === 'undefined') {
             setTimeout(ready, 50);
@@ -51,8 +55,11 @@ async function boot(ctx) {
         initToc(ctx);
         initBookmarks(ctx);
         initProgress(ctx);
+        initHighlights(ctx);
+        initInBookSearch(ctx);
+        initTts(ctx);
+        initDictionary(ctx);
 
-        // Banner dismissal
         document.querySelectorAll('[data-dismiss]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const target = document.getElementById(btn.dataset.dismiss);
