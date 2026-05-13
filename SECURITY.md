@@ -70,10 +70,24 @@ runtime style mutation by `epub.js` for theme application. The nonce
 mechanism is also in place; when an upstream `epub.js` exposes a hook for
 nonces, that can replace `'unsafe-inline'`.
 
+## Post-install hardening
+
+These are quick wins after the installer finishes — they aren't enforced by
+code, so it's on the operator to do them:
+
+1. **Delete `setup.php`.** The installer self-locks once it finishes (re-running
+   it shows a "setup already complete" page), but deleting the file removes
+   the attack surface entirely. The "setup complete" page in the wizard now
+   tells you to do this.
+2. **Schedule the maintenance purge.** `auth_tokens` and `rate_limits` are
+   pruned on demand from **Admin → Maintenance**. For long-running installs
+   add a weekly cron entry — see `INSTALL.md`.
+3. **Vendor `epub.js` and `jszip` locally** (see `assets/vendor/README.md`)
+   then strip the two CDN hosts from `$cdnHosts` in `includes/security.php`
+   to eliminate cross-origin script sources.
+
 ## What's NOT yet protected (roadmap)
 
-- **Email-based password reset** — admins must reset reader passwords
-  manually from `/admin/users` in Phase 1.
 - **Two-factor authentication** — planned for a future release.
 - **Per-IP request quotas beyond login/register/download** — coarse-grained
   rate limiting only.

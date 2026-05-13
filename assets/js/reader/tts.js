@@ -50,6 +50,17 @@ export function initTts(ctx) {
     function populateVoices() {
         const voices = synth.getVoices();
         voiceSel.innerHTML = '';
+        if (voices.length === 0) {
+            // Some browsers (Chrome) populate voices asynchronously; show a
+            // placeholder so the empty <select> doesn't look broken.
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = 'Loading voices…';
+            placeholder.disabled = true;
+            placeholder.selected = true;
+            voiceSel.appendChild(placeholder);
+            return;
+        }
         voices.forEach((v) => {
             const opt = document.createElement('option');
             opt.value = v.name;
@@ -60,6 +71,14 @@ export function initTts(ctx) {
     }
     populateVoices();
     synth.onvoiceschanged = populateVoices;
+
+    // Derive the Pause/Resume label from the SpeechSynthesis state instead
+    // of toggling it imperatively — keeps the button in sync even if state
+    // changes via skip/rate-change/visibilitychange.
+    function renderPauseLabel() {
+        pauseBtn.textContent = synth.paused ? 'Resume' : 'Pause';
+        pauseBtn.setAttribute('aria-pressed', synth.paused ? 'true' : 'false');
+    }
 
     triggerBtn.addEventListener('click', () => {
         toolbar.hidden = !toolbar.hidden;
@@ -72,11 +91,10 @@ export function initTts(ctx) {
     pauseBtn.addEventListener('click', () => {
         if (synth.speaking && !synth.paused) {
             synth.pause();
-            pauseBtn.textContent = 'Resume';
         } else if (synth.paused) {
             synth.resume();
-            pauseBtn.textContent = 'Pause';
         }
+        renderPauseLabel();
     });
     stopBtn.addEventListener('click', () => stop());
     nextBtn.addEventListener('click', () => skip(1));
@@ -131,7 +149,7 @@ export function initTts(ctx) {
         synth.cancel();
         clearHighlight();
         cursor = 0;
-        pauseBtn.textContent = 'Pause';
+        renderPauseLabel();
     }
 
     function skip(delta) {
@@ -225,7 +243,7 @@ export function initTts(ctx) {
     document.addEventListener('visibilitychange', () => {
         if (document.hidden && active) {
             synth.pause();
-            pauseBtn.textContent = 'Resume';
+            renderPauseLabel();
         }
     });
 }

@@ -8,14 +8,15 @@ $activeNav = $activeNav ?? '';
 $user = current_user();
 
 $navItems = [
-    ['key' => 'dashboard',  'label' => 'Dashboard',    'href' => url('admin/index.php')],
-    ['key' => 'books',      'label' => 'Books',        'href' => url('admin/books.php')],
-    ['key' => 'upload',     'label' => 'Upload',       'href' => url('admin/upload.php')],
-    ['key' => 'users',      'label' => 'Users',        'href' => url('admin/users.php')],
-    ['key' => 'thumbnails', 'label' => 'Thumbnails',   'href' => url('admin/thumbnails.php')],
-    ['key' => 'health',     'label' => 'Health',       'href' => url('admin/health.php')],
-    ['key' => 'audit',      'label' => 'Audit log',    'href' => url('admin/audit.php')],
-    ['key' => 'migrate',    'label' => 'Migrations',   'href' => url('admin/migrate.php')],
+    ['key' => 'dashboard',   'label' => 'Dashboard',    'href' => url('admin/index.php')],
+    ['key' => 'books',       'label' => 'Books',        'href' => url('admin/books.php')],
+    ['key' => 'upload',      'label' => 'Upload',       'href' => url('admin/upload.php')],
+    ['key' => 'users',       'label' => 'Users',        'href' => url('admin/users.php')],
+    ['key' => 'thumbnails',  'label' => 'Thumbnails',   'href' => url('admin/thumbnails.php')],
+    ['key' => 'health',      'label' => 'Health',       'href' => url('admin/health.php')],
+    ['key' => 'maintenance', 'label' => 'Maintenance',  'href' => url('admin/maintenance.php')],
+    ['key' => 'audit',       'label' => 'Audit log',    'href' => url('admin/audit.php')],
+    ['key' => 'migrate',     'label' => 'Migrations',   'href' => url('admin/migrate.php')],
 ];
 ?><!doctype html>
 <html lang="en">
@@ -24,6 +25,7 @@ $navItems = [
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= e($pageTitle) ?> · Admin</title>
     <meta name="app-base" content="<?= e(app_base()) ?>">
+    <meta name="app-version" content="<?= e(app_version()) ?>">
     <meta name="csrf-token" content="<?= e(csrf_token()) ?>">
     <meta name="color-scheme" content="light dark">
     <link rel="icon" href="<?= e(asset('favicon.ico')) ?>" sizes="any">

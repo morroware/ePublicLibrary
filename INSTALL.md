@@ -89,6 +89,26 @@ to the `log` driver and logs a warning so you'll see the misconfiguration.
 - **Force HTTPS**: enable AutoSSL in cPanel; the app already sends
   `Strict-Transport-Security` when served over HTTPS.
 
+## Periodic maintenance
+
+A few auxiliary tables grow over time and benefit from periodic cleanup:
+
+- **`auth_tokens`** — remember-me, password-reset, and email-verify tokens.
+  Rows past `expires_at` are unusable but stay on disk until purged.
+- **`rate_limits`** — sliding-window throttle state. Each bucket auto-expires;
+  the rows linger.
+
+Run **Admin → Maintenance** to purge both on demand. For long-lived installs,
+schedule it weekly via cron. One option (replace the cookie path):
+
+```cron
+0 3 * * 0 curl -fsSL --cookie /path/to/admin-session.cookie \
+    "https://your-site.com/admin/maintenance.php" >/dev/null
+```
+
+Neither table affects correctness if left alone — this is purely about disk
+footprint and index size.
+
 ## Troubleshooting
 
 **Setup wizard says an extension is missing.** Most hosts let you pick the

@@ -60,6 +60,8 @@ export function initHighlights(ctx) {
                 applyToRendition(h);
             });
             renderList();
+        } finally {
+            listEl?.setAttribute('aria-busy', 'false');
         }
     }
 
@@ -270,11 +272,11 @@ export function initHighlights(ctx) {
     async function updateHighlight(id, fields) {
         const h = store.get(String(id));
         if (!h) return;
-        const wasColor = h.color;
+        const previous = { ...h };  // snapshot for rollback
         Object.assign(h, fields);
         // Re-apply with new color
-        if (fields.color && fields.color !== wasColor) {
-            removeFromRendition({ ...h, color: wasColor });
+        if (fields.color && fields.color !== previous.color) {
+            removeFromRendition(previous);
             applyToRendition(h);
         }
         renderList();
@@ -286,13 +288,22 @@ export function initHighlights(ctx) {
             await request(`${highlightsUrl}?id=${encodeURIComponent(id)}&_method=PATCH`,
                           { method: 'POST', body: fields });
         } catch {
-            showToast('Could not save changes.', 'error');
+            // Roll back the optimistic update so the in-memory state and
+            // the server agree on next reload.
+            if (fields.color && fields.color !== previous.color) {
+                removeFromRendition(h);
+                applyToRendition(previous);
+            }
+            store.set(String(id), previous);
+            renderList();
+            showToast('Could not save changes — reverted.', 'error');
         }
     }
 
     async function removeHighlight(id) {
         const h = store.get(String(id));
         if (!h) return;
+        const previous = { ...h };
         store.delete(String(id));
         removeFromRendition(h);
         renderList();
@@ -303,7 +314,11 @@ export function initHighlights(ctx) {
         try {
             await request(`${highlightsUrl}?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
         } catch {
-            showToast('Could not delete highlight.', 'error');
+            // Restore so the user can see what's still on the server.
+            store.set(String(id), previous);
+            applyToRendition(previous);
+            renderList();
+            showToast('Could not delete highlight — restored.', 'error');
         }
     }
 

@@ -67,11 +67,11 @@ $me = current_user();
                 <td>
                     <?php if ((int) $u['id'] !== (int) $me['id']): ?>
                         <form method="post" action="<?= e(url('admin/users.php')) ?>" class="inline-form"
-                              onsubmit="return confirm('Reset password for <?= e(addslashes($u['username'])) ?>?');">
+                              onsubmit="return confirm('Email a password-reset link to <?= e(addslashes($u['username'])) ?>?');">
                             <?= csrf_field() ?>
-                            <input type="hidden" name="verb" value="reset_password">
+                            <input type="hidden" name="verb" value="send_reset_link">
                             <input type="hidden" name="id" value="<?= e((string) $u['id']) ?>">
-                            <button type="submit" class="btn-link">Reset password</button>
+                            <button type="submit" class="btn-link" title="Sends a one-time reset link to the user's email">Send reset link</button>
                         </form>
                     <?php endif; ?>
                 </td>

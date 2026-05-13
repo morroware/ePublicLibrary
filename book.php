@@ -39,10 +39,20 @@ if (is_post()) {
             flash('error', 'Pick a rating between 1 and 5 stars.');
             redirect('book.php?b=' . $uuid);
         }
+        $title = isset($_POST['title']) ? (string) $_POST['title'] : null;
+        $body  = isset($_POST['body'])  ? (string) $_POST['body']  : null;
+        if ($title !== null && mb_strlen($title) > ReviewRepository::TITLE_MAX) {
+            flash('error', 'Title is too long (max ' . ReviewRepository::TITLE_MAX . ' characters).');
+            redirect('book.php?b=' . $uuid);
+        }
+        if ($body !== null && mb_strlen($body) > ReviewRepository::BODY_MAX) {
+            flash('error', 'Review is too long (max ' . ReviewRepository::BODY_MAX . ' characters).');
+            redirect('book.php?b=' . $uuid);
+        }
         ReviewRepository::upsert((int) $user['id'], (int) $book['id'], [
             'rating' => $rating,
-            'title'  => $_POST['title'] ?? null,
-            'body'   => $_POST['body']  ?? null,
+            'title'  => $title,
+            'body'   => $body,
         ]);
         AuditLogger::log('review.submit', 'book', (int) $book['id'], ['rating' => $rating]);
         flash('success', 'Thanks for your review.');

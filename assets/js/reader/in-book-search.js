@@ -31,6 +31,18 @@ export function initInBookSearch(ctx) {
         runSearch(q, ++runId);
     });
 
+    const CHAPTER_LOAD_TIMEOUT_MS = 8000;
+
+    function withTimeout(promise, ms) {
+        return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error('timeout')), ms);
+            promise.then(
+                (v) => { clearTimeout(timer); resolve(v); },
+                (e) => { clearTimeout(timer); reject(e); }
+            );
+        });
+    }
+
     async function runSearch(q, myRun) {
         const lower = q.toLowerCase();
         const items = book?.spine?.spineItems ?? book?.spine?.items ?? [];
@@ -39,29 +51,34 @@ export function initInBookSearch(ctx) {
             return;
         }
         let totalMatches = 0;
+        let skipped = 0;
         for (let i = 0; i < items.length; i++) {
             if (aborted || myRun !== runId) return;
             status.textContent = `Searching… (${i + 1} / ${items.length})`;
             const item = items[i];
             try {
-                await item.load(book.load.bind(book));
+                // Per-chapter timeout: a single slow/broken chapter must not
+                // hang the entire search.
+                await withTimeout(item.load(book.load.bind(book)), CHAPTER_LOAD_TIMEOUT_MS);
                 const doc = item.document || item.contents?.document;
-                if (!doc) { item.unload(); continue; }
+                if (!doc) { try { item.unload(); } catch {} continue; }
                 const text = doc.body ? doc.body.textContent || '' : '';
                 const hits = findMatches(text, lower, q, item);
                 if (hits.length) {
                     totalMatches += hits.length;
                     appendHits(hits, item);
                 }
-                item.unload();
+                try { item.unload(); } catch {}
             } catch {
-                /* skip on error */
+                skipped += 1;
+                try { item.unload(); } catch {}
             }
         }
         if (myRun === runId) {
+            const skipNote = skipped > 0 ? ` (${skipped} skipped)` : '';
             status.textContent = totalMatches === 0
-                ? 'No matches.'
-                : `${totalMatches} match${totalMatches === 1 ? '' : 'es'} across ${items.length} chapter${items.length === 1 ? '' : 's'}.`;
+                ? `No matches.${skipNote}`
+                : `${totalMatches} match${totalMatches === 1 ? '' : 'es'} across ${items.length} chapter${items.length === 1 ? '' : 's'}.${skipNote}`;
         }
     }
 

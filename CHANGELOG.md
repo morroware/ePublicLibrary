@@ -1,5 +1,91 @@
 # Changelog
 
+## 1.3.1 — Hardening
+
+A full security, reliability, accessibility, and performance pass on top
+of the 1.3.0 release. No new features — every change tightens, clarifies,
+or speeds up something that already shipped.
+
+### Security & auth
+
+- **Single-use password-reset tokens.** `reset-password.php` now claims the
+  token atomically (`UPDATE … WHERE used_at IS NULL`). Concurrent or
+  replayed reset requests get a clear "link no longer valid" message
+  instead of double-applying the password change.
+- **Admin password reset no longer leaks the new password.** The
+  `Reset password` action on `/admin/users` is replaced with `Send reset
+  link` — it issues a one-time `password_reset` token (just like the public
+  forgot-password flow) and emails the link to the user. Works under any
+  mail driver, including the dev `log` driver.
+- **CSRF query-string fallback narrowed.** `?_token=` is now only accepted
+  on endpoints that need it for `navigator.sendBeacon` (currently
+  `api/sessions.php`). Tokens can no longer leak into Referer headers from
+  unrelated POSTs.
+- **Input length caps enforced at the controller.**
+  - Review title ≤ 200 chars, body ≤ 10 000 chars (`api/reviews.php`, `book.php`).
+  - Collection name ≤ 120 chars, description ≤ 500 chars (`collections.php`,
+    `CollectionRepository`).
+  - `api/reviews.php` clamps `offset` against the row total so far-future
+    offsets can't trigger huge `OFFSET` scans.
+- **`.phar` blocked at the web server**, matching the existing
+  `.phtml/.phps/.php3..7/.inc` denial.
+
+### Reader robustness
+
+- **Service worker cache busts on deploy.** `sw-register.js` registers
+  `sw.js?v=<APP_VERSION>` and `sw.js` derives its cache keys from that
+  query parameter — so bumping `includes/version.php` automatically
+  invalidates stale shells.
+- **Highlights panel shows a loading state** while the initial fetch
+  resolves (was: blank until response). `aria-busy` is cleared on
+  completion.
+- **TTS pause/resume label derives from `synth.paused`** instead of being
+  toggled imperatively, so it stays in sync after skip / rate-change /
+  visibilitychange.
+- **TTS voice select shows "Loading voices…"** when `getVoices()` returns
+  empty (typical first paint on Chrome).
+- **In-book search times out a stuck chapter** after 8 s and continues —
+  one broken `item.load()` can no longer hang the whole search.
+- **Dictionary popover dismisses on Escape, on outside touch, and on
+  outside taps inside the reader iframe.** Previously only the explicit
+  `×` button worked on some touch devices. Also adds `aria-modal="true"`.
+- **Progress bar click-to-seek surfaces failures via toast** instead of
+  silently doing nothing on invalid CFI / load errors.
+- **Highlights roll back on save failure.** `updateHighlight` and
+  `removeHighlight` revert the optimistic UI when the server call fails,
+  preventing silent data divergence.
+
+### Performance & DB
+
+- **New migration `0015_audit_hardening.sql`**: adds four indexes that
+  were missing on hot paths.
+  - `book_tags(book_id, tag_id)` — book-detail tag fetches.
+  - `reading_progress(percentage)` — stats / Continue Reading rails.
+  - `collection_books(collection_id, added_at)` — date-sorted shelves.
+  - `reviews(updated_at)` — admin "recently edited" filters.
+- **N+1 query removed** on `/collections.php`. Was per-shelf cover-preview
+  fetch; now a single batched query (`CollectionRepository::previewCoversFor`).
+- **Admin → Maintenance** page (`/admin/maintenance.php`) exposes purge
+  buttons for expired `auth_tokens` and `rate_limits` rows so they don't
+  grow unbounded on long-running installs.
+- **Slug collision retry** in `CollectionRepository::create` — race on
+  shelf creation now retries with a new suffix instead of throwing.
+
+### Setup, version, docs
+
+- **`includes/version.php`** is the single source of truth for
+  `APP_VERSION`. `setup.php` now writes the running version on install
+  instead of hard-coding `1.0.0`.
+- **`<meta name="app-version">`** is emitted by every layout — the
+  service worker and any analytics can read it.
+- **`setup_render_locked()`** now tells the installer to delete
+  `setup.php` after install (the existing `setup_render_done` already
+  did; this covers the case where someone revisits the URL later).
+- **`INSTALL.md`** gains a "Periodic maintenance" section with the
+  recommended cron entry.
+- **`SECURITY.md`** gains a "Post-install hardening" checklist and drops
+  the obsolete "no email-based reset" item (shipped in 1.3.0).
+
 ## 1.3.0 — Polish
 
 Phase 4 — closes out the original four-phase plan. Adds reading-session

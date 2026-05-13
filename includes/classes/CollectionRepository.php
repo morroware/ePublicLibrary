@@ -89,6 +89,38 @@ class CollectionRepository
         return (int) $stmt->fetchColumn();
     }
 
+    /**
+     * Batched preview-cover fetch for the shelves index. Replaces an
+     * N+1 loop of booksIn() calls — one round-trip regardless of shelf
+     * count. Returns ['collectionId' => [cover_path|null, ...]].
+     */
+    public static function previewCoversFor(array $collectionIds, int $perShelf = 4): array
+    {
+        $previews = [];
+        $collectionIds = array_values(array_unique(array_map('intval', $collectionIds)));
+        if (!$collectionIds) {
+            return $previews;
+        }
+        foreach ($collectionIds as $cid) {
+            $previews[$cid] = [];
+        }
+        $placeholders = implode(',', array_fill(0, count($collectionIds), '?'));
+        $stmt = db()->prepare("SELECT cb.collection_id, b.cover_path
+                              FROM collection_books cb
+                              JOIN books b ON b.id = cb.book_id
+                              WHERE cb.collection_id IN ($placeholders)
+                                AND b.status = 'published'
+                              ORDER BY cb.collection_id, cb.position ASC, cb.added_at ASC");
+        $stmt->execute($collectionIds);
+        foreach ($stmt->fetchAll() as $row) {
+            $cid = (int) $row['collection_id'];
+            if (count($previews[$cid]) < $perShelf) {
+                $previews[$cid][] = $row['cover_path'] ?: null;
+            }
+        }
+        return $previews;
+    }
+
     /** Which shelves of $userId contain $bookId (used by the "Add to shelf" UI). */
     public static function forUserAndBook(int $userId, int $bookId): array
     {
@@ -111,21 +143,45 @@ class CollectionRepository
 
     /* --------------- mutations --------------- */
 
+    public const NAME_MAX        = 120;
+    public const DESCRIPTION_MAX = 500;
+
     public static function create(int $userId, array $data): int
     {
         $name = trim((string) ($data['name'] ?? ''));
         if ($name === '') {
             throw new InvalidArgumentException('Collection name is required.');
         }
-        $slug        = self::uniqueSlug($userId, self::slugify($name));
-        $description = $data['description'] ?? null;
-        $isPublic    = !empty($data['is_public']) ? 1 : 0;
+        if (mb_strlen($name) > self::NAME_MAX) {
+            throw new InvalidArgumentException('Collection name is too long (max ' . self::NAME_MAX . ' characters).');
+        }
+        $description = isset($data['description']) ? (string) $data['description'] : null;
+        if ($description !== null) {
+            $description = trim($description);
+            if (mb_strlen($description) > self::DESCRIPTION_MAX) {
+                throw new InvalidArgumentException('Description is too long (max ' . self::DESCRIPTION_MAX . ' characters).');
+            }
+            if ($description === '') $description = null;
+        }
+        $isPublic = !empty($data['is_public']) ? 1 : 0;
 
-        $stmt = db()->prepare("INSERT INTO collections
-            (user_id, name, slug, description, is_public, is_system, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, 0, ?, ?)");
-        $stmt->execute([$userId, mb_substr($name, 0, 120), $slug, $description, $isPublic, now_utc(), now_utc()]);
-        return (int) db()->lastInsertId();
+        // Slug uniqueness is enforced by a UNIQUE index; retry on the rare race.
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            $slug = self::uniqueSlug($userId, self::slugify($name));
+            try {
+                $stmt = db()->prepare("INSERT INTO collections
+                    (user_id, name, slug, description, is_public, is_system, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, 0, ?, ?)");
+                $stmt->execute([$userId, mb_substr($name, 0, self::NAME_MAX), $slug, $description, $isPublic, now_utc(), now_utc()]);
+                return (int) db()->lastInsertId();
+            } catch (PDOException $e) {
+                // 23000 = integrity constraint (duplicate slug). Retry with a new suffix.
+                if ($e->getCode() !== '23000' || $attempt === 2) {
+                    throw $e;
+                }
+            }
+        }
+        throw new RuntimeException('Could not create shelf (slug collision).');
     }
 
     public static function update(int $collectionId, array $fields): void
@@ -137,8 +193,11 @@ class CollectionRepository
         if (isset($fields['name'])) {
             $name = trim((string) $fields['name']);
             if ($name !== '') {
+                if (mb_strlen($name) > self::NAME_MAX) {
+                    throw new InvalidArgumentException('Collection name is too long (max ' . self::NAME_MAX . ' characters).');
+                }
                 $set[] = 'name = ?';
-                $params[] = mb_substr($name, 0, 120);
+                $params[] = mb_substr($name, 0, self::NAME_MAX);
                 // Update slug too if it isn't a system collection
                 if (!$coll['is_system']) {
                     $set[] = 'slug = ?';
@@ -147,8 +206,16 @@ class CollectionRepository
             }
         }
         if (array_key_exists('description', $fields)) {
+            $desc = $fields['description'];
+            if ($desc !== null) {
+                $desc = trim((string) $desc);
+                if (mb_strlen($desc) > self::DESCRIPTION_MAX) {
+                    throw new InvalidArgumentException('Description is too long (max ' . self::DESCRIPTION_MAX . ' characters).');
+                }
+                if ($desc === '') $desc = null;
+            }
             $set[] = 'description = ?';
-            $params[] = $fields['description'] !== null ? (string) $fields['description'] : null;
+            $params[] = $desc;
         }
         if (array_key_exists('is_public', $fields)) {
             $set[] = 'is_public = ?';

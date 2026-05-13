@@ -40,21 +40,27 @@ if (searchInput && listbox) {
         },
     });
 
-    // Position listbox under input
+    // Position listbox under the input — flip above when the bottom is
+    // too close to the viewport edge (mobile keyboards, short screens).
     const wrap = searchInput.closest('.search-input-wrapper');
-    if (wrap) {
-        const r = wrap.getBoundingClientRect();
-        listbox.style.top = `${r.bottom + window.scrollY + 4}px`;
-        listbox.style.left = `${r.left + window.scrollX}px`;
-        listbox.style.width = `${r.width}px`;
-    }
-    window.addEventListener('resize', () => {
+    const positionListbox = () => {
         if (!wrap) return;
         const r = wrap.getBoundingClientRect();
-        listbox.style.top = `${r.bottom + window.scrollY + 4}px`;
+        // Height when populated; if hidden/empty, fall back to a reasonable estimate.
+        const lbHeight = listbox.offsetHeight || 240;
+        const spaceBelow = window.innerHeight - r.bottom;
+        const spaceAbove = r.top;
+        const flipAbove = spaceBelow < lbHeight + 16 && spaceAbove > spaceBelow;
+        const top = flipAbove
+            ? r.top + window.scrollY - lbHeight - 4
+            : r.bottom + window.scrollY + 4;
+        listbox.style.top = `${top}px`;
         listbox.style.left = `${r.left + window.scrollX}px`;
         listbox.style.width = `${r.width}px`;
-    });
+    };
+    positionListbox();
+    window.addEventListener('resize', positionListbox);
+    window.addEventListener('scroll', positionListbox, { passive: true });
 }
 
 /* ---- Book card keyboard activation ---- */

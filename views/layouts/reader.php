@@ -11,6 +11,7 @@ $pageTitle = $pageTitle ?? ($book['title'] ?? 'Reading');
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title><?= e($pageTitle) ?></title>
     <meta name="app-base" content="<?= e(app_base()) ?>">
+    <meta name="app-version" content="<?= e(app_version()) ?>">
     <meta name="csrf-token" content="<?= e(csrf_token()) ?>">
     <meta name="book-uuid" content="<?= e($book['uuid']) ?>">
     <meta name="book-title" content="<?= e($book['title']) ?>">

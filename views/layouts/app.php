@@ -15,6 +15,7 @@ $user = current_user();
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
     <title><?= e($pageTitle) ?></title>
     <meta name="app-base" content="<?= e(app_base()) ?>">
+    <meta name="app-version" content="<?= e(app_version()) ?>">
     <meta name="csrf-token" content="<?= e(csrf_token()) ?>">
     <meta name="color-scheme" content="light dark">
     <link rel="icon" href="<?= e(asset('favicon.ico')) ?>" sizes="any">
