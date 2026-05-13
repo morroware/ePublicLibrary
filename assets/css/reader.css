@@ -96,6 +96,13 @@
 .reader-hotspot-prev { left: 0; }
 .reader-hotspot-next { right: 0; background: linear-gradient(to left, transparent, transparent); }
 .reader-hotspot-next:hover { background: linear-gradient(to left, rgba(194,112,60,0.04), transparent); }
+/* Hotspots are invisible until focused — give keyboard users a visible
+   handle so they know prev/next exist and where they live on screen. */
+.reader-hotspot:focus-visible {
+    outline: none;
+    background: rgba(194,112,60,0.10);
+    box-shadow: inset 0 0 0 2px var(--accent-500);
+}
 
 /* ---- Progress bar ---- */
 .reader-progress-bar {

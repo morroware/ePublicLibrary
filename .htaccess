@@ -24,8 +24,8 @@
 </FilesMatch>
 
 # ---- Block PHP variants commonly used to bypass extension checks -----------
-# (Real entrypoints are .php — never .phtml/.php5/.inc.)
-<FilesMatch "\.(phtml|phps|php[3457]?|inc)$">
+# (Real entrypoints are .php — never .phtml/.php5/.inc/.phar.)
+<FilesMatch "\.(phtml|phps|phar|php[3457]?|inc)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>

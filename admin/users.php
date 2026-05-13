@@ -29,12 +29,37 @@ if (is_post()) {
         AuditLogger::log('user.role_changed', 'user', $id, ['role' => $role]);
         flash('success', 'User role updated.');
     }
-    if ($verb === 'reset_password') {
-        $newPass = bin2hex(random_bytes(8));
-        UserRepository::updatePassword($id, PasswordHasher::hash($newPass));
-        AuthTokenRepository::revokeAllForUser($id);
-        AuditLogger::log('user.password_reset', 'user', $id);
-        flash('success', "Temporary password for {$target['username']}: {$newPass}");
+    if ($verb === 'send_reset_link') {
+        // Issue a one-time password-reset token and email the user the same
+        // link they'd get from the public "forgot password" flow. Avoids
+        // disclosing a plaintext password back through the admin UI.
+        $selector  = bin2hex(random_bytes(8));
+        $verifier  = bin2hex(random_bytes(32));
+        $tokenHash = hash('sha256', $verifier);
+        AuthTokenRepository::create([
+            'user_id'    => $id,
+            'purpose'    => 'password_reset',
+            'selector'   => $selector,
+            'token_hash' => $tokenHash,
+            'expires_at' => gmdate('Y-m-d H:i:s', time() + 60 * 60),
+        ]);
+        $link = (request_is_https() ? 'https://' : 'http://')
+              . ($_SERVER['HTTP_HOST'] ?? 'localhost')
+              . url('reset-password.php?token=' . eurl($selector . ':' . $verifier));
+        $body = "Hi {$target['username']},\n\n"
+              . "An administrator of " . config('app_name', 'ePublicLibrary')
+              . " has issued a password-reset link for your account. "
+              . "Click the link below within the next hour to choose a new password:\n\n"
+              . $link . "\n\n"
+              . "If you weren't expecting this, contact your administrator.\n\n"
+              . "— " . config('app_name', 'ePublicLibrary');
+        $sent = Mailer::send($target['email'], 'Password reset', $body);
+        AuditLogger::log('user.password_reset', 'user', $id, ['driver' => config('mail.driver', 'log')]);
+        if ($sent) {
+            flash('success', "Reset link sent to {$target['email']}.");
+        } else {
+            flash('error', "Could not send email; check storage/logs/mail.log for the link.");
+        }
     }
     redirect('admin/users.php');
 }

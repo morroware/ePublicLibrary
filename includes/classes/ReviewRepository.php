@@ -72,6 +72,12 @@ class ReviewRepository
 
     /* --------------- mutations --------------- */
 
+    /** Hard caps on text-review length. Enforced at the repo + at the
+     *  controller for clear user errors. Body cap matches what fits
+     *  comfortably in a TEXT column without DoS risk. */
+    public const TITLE_MAX = 200;
+    public const BODY_MAX  = 10000;
+
     /**
      * Upsert a user's review for a book. Returns the review id.
      * Aggregates on books are refreshed by trigger; we just persist the row.
@@ -81,8 +87,8 @@ class ReviewRepository
         $rating = max(1, min(5, (int) ($data['rating'] ?? 0)));
         $title  = $data['title'] ?? null;
         $body   = $data['body']  ?? null;
-        $title  = $title ? mb_substr(trim($title), 0, 200) : null;
-        $body   = $body  ? trim($body) : null;
+        $title  = $title ? mb_substr(trim($title), 0, self::TITLE_MAX) : null;
+        $body   = $body  ? mb_substr(trim($body),  0, self::BODY_MAX)  : null;
 
         $existing = self::findForUserBook($userId, $bookId);
         if ($existing) {

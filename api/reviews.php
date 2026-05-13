@@ -22,10 +22,13 @@ if ($method === 'GET') {
         json_error('Book not found', 404);
     }
     $limit  = max(1, min(100, (int) ($_GET['limit'] ?? 25)));
-    $offset = max(0,         (int) ($_GET['offset'] ?? 0));
+    $total  = ReviewRepository::countForBook((int) $book['id']);
+    // Ceiling the offset against the total prevents an attacker from
+    // forcing huge OFFSET scans (DoS) with arbitrary page numbers.
+    $offset = max(0, min((int) ($_GET['offset'] ?? 0), max(0, $total - 1)));
     json_response([
         'items'        => ReviewRepository::listForBook((int) $book['id'], $limit, $offset),
-        'total'        => ReviewRepository::countForBook((int) $book['id']),
+        'total'        => $total,
         'distribution' => ReviewRepository::distributionForBook((int) $book['id']),
         'avg_rating'   => (float) $book['avg_rating'],
     ]);
@@ -47,14 +50,22 @@ if ($method === 'POST') {
     if (!preg_match('/^[0-9a-f-]{36}$/i', $bookUuid) || $rating < 1 || $rating > 5) {
         json_error('Invalid request', 400);
     }
+    $title = isset($payload['title']) ? (string) $payload['title'] : null;
+    $body  = isset($payload['body'])  ? (string) $payload['body']  : null;
+    if ($title !== null && mb_strlen($title) > ReviewRepository::TITLE_MAX) {
+        json_error('Title is too long (max ' . ReviewRepository::TITLE_MAX . ' characters).', 422);
+    }
+    if ($body !== null && mb_strlen($body) > ReviewRepository::BODY_MAX) {
+        json_error('Review is too long (max ' . ReviewRepository::BODY_MAX . ' characters).', 422);
+    }
     $book = BookRepository::findByUuid($bookUuid);
     if (!$book) {
         json_error('Book not found', 404);
     }
     $id = ReviewRepository::upsert((int) $user['id'], (int) $book['id'], [
         'rating' => $rating,
-        'title'  => $payload['title'] ?? null,
-        'body'   => $payload['body']  ?? null,
+        'title'  => $title,
+        'body'   => $body,
     ]);
     AuditLogger::log('review.submit', 'book', (int) $book['id'], ['rating' => $rating]);
     json_response(['ok' => true, 'id' => $id]);

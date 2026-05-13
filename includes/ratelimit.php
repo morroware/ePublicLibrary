@@ -74,3 +74,16 @@ function rate_limit_reset(string $bucket): void
         log_error($e);
     }
 }
+
+/** Drop all expired rate-limit buckets. Returns the number of rows removed. */
+function rate_limit_purge_expired(): int
+{
+    try {
+        $stmt = db()->prepare("DELETE FROM " . table('rate_limits') . " WHERE expires_at < ?");
+        $stmt->execute([time()]);
+        return $stmt->rowCount();
+    } catch (Throwable $e) {
+        log_error($e);
+        return 0;
+    }
+}

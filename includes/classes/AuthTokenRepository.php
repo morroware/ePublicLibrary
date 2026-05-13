@@ -67,6 +67,23 @@ class AuthTokenRepository
         $stmt->execute([$id]);
     }
 
+    /**
+     * Single-use claim: marks the token as used only if it hasn't been
+     * already. Returns true when this caller "won" the claim. Prevents
+     * find-then-mark race conditions on password reset / one-time tokens.
+     */
+    public static function claimSingleUse(int $id): bool
+    {
+        $stmt = db()->prepare("UPDATE auth_tokens
+                                  SET used_at = CURRENT_TIMESTAMP
+                                WHERE id = ?
+                                  AND used_at IS NULL
+                                  AND revoked_at IS NULL
+                                  AND expires_at > CURRENT_TIMESTAMP");
+        $stmt->execute([$id]);
+        return $stmt->rowCount() === 1;
+    }
+
     public static function purgeExpired(): int
     {
         $stmt = db()->query("DELETE FROM auth_tokens WHERE expires_at < CURRENT_TIMESTAMP");

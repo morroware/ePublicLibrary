@@ -65,6 +65,7 @@ export function initDictionary(ctx) {
         const el = document.createElement('div');
         el.className = 'dictionary-popover';
         el.setAttribute('role', 'dialog');
+        el.setAttribute('aria-modal', 'true');
         el.setAttribute('aria-label', 'Definition');
         el.hidden = true;
         el.innerHTML = `
@@ -100,8 +101,32 @@ export function initDictionary(ctx) {
         popover.hidden = true;
     }
 
-    document.addEventListener('mousedown', (e) => {
-        if (!popover.contains(e.target) && !popover.hidden) hide();
+    // Outside-pointer dismissal (covers mouse and touch).
+    ['mousedown', 'touchstart'].forEach((ev) => {
+        document.addEventListener(ev, (e) => {
+            if (!popover.contains(e.target) && !popover.hidden) hide();
+        }, { passive: true });
+    });
+
+    // Escape key dismissal — works from anywhere on the host page.
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !popover.hidden) {
+            hide();
+            e.stopPropagation();
+        }
+    });
+
+    // The rendition iframe has its own document; pointer / keyboard events
+    // inside it don't bubble to the host. Hook each chapter's iframe to
+    // also dismiss the popover.
+    rendition.hooks.content.register((contents) => {
+        const doc = contents.document;
+        const dismissOnPointer = () => { if (!popover.hidden) hide(); };
+        doc.addEventListener('mousedown', dismissOnPointer, { passive: true });
+        doc.addEventListener('touchstart', dismissOnPointer, { passive: true });
+        doc.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !popover.hidden) hide();
+        });
     });
 
     async function lookup(word) {

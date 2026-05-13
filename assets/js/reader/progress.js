@@ -4,6 +4,7 @@
  */
 
 import { post, get } from '../shared/api.js';
+import { showToast } from '../reader.js';
 
 const STORAGE_KEY_PREFIX = 'elib-progress-';
 const DEBOUNCE_MS = 5000;
@@ -61,13 +62,26 @@ export function initProgress(ctx) {
         } catch (e) { /* swallow — localStorage is the fallback */ }
     }
 
-    // Click-to-seek on the progress track
+    // Click-to-seek on the progress track. Surface invalid-CFI / load
+    // failures to the user instead of failing silently.
     if (trackEl) {
         trackEl.addEventListener('click', (e) => {
             const rect = trackEl.getBoundingClientRect();
-            const ratio = (e.clientX - rect.left) / rect.width;
-            const cfi = book.locations.cfiFromPercentage(ratio);
-            if (cfi) rendition.display(cfi);
+            const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            let cfi;
+            try {
+                cfi = book.locations.cfiFromPercentage(ratio);
+            } catch (err) {
+                showToast('Could not jump to that position.', 'error');
+                return;
+            }
+            if (!cfi) {
+                showToast('Position index not ready yet — try again in a moment.', 'info');
+                return;
+            }
+            Promise.resolve(rendition.display(cfi)).catch(() => {
+                showToast('Could not load that position.', 'error');
+            });
         });
     }
 

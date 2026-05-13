@@ -40,13 +40,17 @@ if (is_post()) {
             flash('error', 'Shelf not found.');
             redirect('collections.php');
         }
-        CollectionRepository::update($id, [
-            'name'        => $_POST['name'] ?? null,
-            'description' => $_POST['description'] ?? null,
-            'is_public'   => !empty($_POST['is_public']),
-        ]);
-        AuditLogger::log('collection.update', 'collection', $id);
-        flash('success', 'Shelf updated.');
+        try {
+            CollectionRepository::update($id, [
+                'name'        => $_POST['name'] ?? null,
+                'description' => $_POST['description'] ?? null,
+                'is_public'   => !empty($_POST['is_public']),
+            ]);
+            AuditLogger::log('collection.update', 'collection', $id);
+            flash('success', 'Shelf updated.');
+        } catch (InvalidArgumentException $e) {
+            flash('error', $e->getMessage());
+        }
         redirect('collections.php');
     }
 
@@ -71,10 +75,11 @@ if (is_post()) {
 
 $shelves = CollectionRepository::listForUser((int) $user['id']);
 
-// For each shelf, peek at the first 4 covers to use as a preview mosaic.
+// First-4 cover preview per shelf in a single round-trip (was N+1).
+$shelfIds = array_map(static fn($s) => (int) $s['id'], $shelves);
+$previewMap = CollectionRepository::previewCoversFor($shelfIds, 4);
 foreach ($shelves as &$s) {
-    $books = CollectionRepository::booksIn((int) $s['id'], 4);
-    $s['preview_covers'] = array_map(static fn($b) => $b['cover_path'] ?: null, $books);
+    $s['preview_covers'] = $previewMap[(int) $s['id']] ?? [];
 }
 unset($s);
 

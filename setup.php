@@ -179,7 +179,7 @@ function setup_run(): array
     $configPath = __DIR__ . '/includes/config.php';
     $cfg = [
         'app_name'    => $state['site']['app_name'],
-        'app_version' => '1.0.0',
+        'app_version' => APP_VERSION,
         'base_url'    => $state['site']['base_url'],
         'debug'       => false,
         'timezone'    => $state['site']['timezone'],
@@ -347,9 +347,15 @@ function setup_render_locked(): void
 {
     setup_layout('Setup complete', function () { ?>
         <h1>Setup is already complete.</h1>
-        <p>This installation has been initialized. To re-run setup, open
+        <p>This installation has been initialized.</p>
+        <div class="callout callout-warn" style="margin: 1.5rem 0; padding: 1rem 1.25rem; border-left: 4px solid #d6864e; background: rgba(214,134,78,0.08);">
+            <strong>Security:</strong> delete <code>setup.php</code> from the install root now that
+            setup is finished. Leaving the file on disk is harmless (this page refuses to re-run), but
+            removing it shrinks the attack surface and stops bots from probing for installer fingerprints.
+        </div>
+        <p>To re-run setup, restore the file from version control, then open
            <code>includes/config.php</code> and set <code>setup_completed_at</code>
-           back to <code>0</code>, then revisit this page.</p>
+           back to <code>0</code>.</p>
         <p><a class="btn" href="<?= e(url('index.php')) ?>">Open the library</a></p>
     <?php });
 }

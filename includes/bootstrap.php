@@ -18,6 +18,7 @@ if (!defined('APP_BOOTED')) {
 
 /* ----------- Helpers, autoload, error handling first --------------------- */
 
+require __DIR__ . '/version.php';
 require __DIR__ . '/helpers.php';
 require __DIR__ . '/autoload.php';
 require __DIR__ . '/security.php';

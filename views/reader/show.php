@@ -122,8 +122,12 @@ $highlightsUrl = url('api/highlights.php');
                 <button type="button" class="reader-panel-close" data-close="panel-highlights" aria-label="Close">×</button>
             </div>
         </header>
-        <ul class="reader-panel-list" id="highlights-list">
-            <li class="reader-panel-empty">Select text in the book to add a highlight.</li>
+        <ul class="reader-panel-list" id="highlights-list" aria-busy="<?= $isGuest ? 'false' : 'true' ?>">
+            <?php if ($isGuest): ?>
+                <li class="reader-panel-empty">Select text in the book to add a highlight.</li>
+            <?php else: ?>
+                <li class="reader-panel-empty">Loading highlights…</li>
+            <?php endif; ?>
         </ul>
     </aside>
 

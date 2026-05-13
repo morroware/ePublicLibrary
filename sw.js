@@ -12,7 +12,10 @@
  * versioned so a deploy invalidates the old shell.
  */
 
-const VERSION    = 'v1';
+// Pull the version stamp from the registration URL (sw.js?v=<APP_VERSION>),
+// so a deploy that bumps APP_VERSION transparently invalidates old caches.
+// Falls back to 'v1' if no query param is present (e.g. direct SW updates).
+const VERSION    = new URLSearchParams(self.location.search).get('v') || 'v1';
 const APP_SHELL  = `elib-shell-${VERSION}`;
 const HTML_CACHE = `elib-html-${VERSION}`;
 const COVERS     = `elib-covers-${VERSION}`;
