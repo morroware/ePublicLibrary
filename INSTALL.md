@@ -42,6 +42,41 @@
    schema changes.
 4. (Optional) *Admin → Thumbnails → Build missing* to refresh covers.
 
+## Configuring email
+
+Out of the box, password-reset and other transactional emails are written
+to `storage/logs/mail.log` (the `log` driver). To send real email, edit
+`includes/config.php`:
+
+```php
+'mail' => [
+    'driver'    => 'mail',                       // or 'smtp'
+    'from_addr' => 'no-reply@your-domain.com',
+    'from_name' => 'Your Library',
+    'smtp' => [
+        'host'       => 'smtp.example.com',
+        'port'       => 587,
+        'username'   => 'you@example.com',
+        'password'   => '...',
+        'encryption' => 'tls',
+    ],
+],
+```
+
+- `driver = 'mail'` uses PHP's built-in `mail()` — usually works on
+  cPanel hosts with a sendmail-compatible MTA. No SMTP config needed.
+- `driver = 'smtp'` requires PHPMailer vendored under
+  `includes/vendor/PHPMailer/`:
+
+```bash
+cd includes/vendor/
+git clone --depth 1 https://github.com/PHPMailer/PHPMailer.git
+# or download the release zip and extract here so includes/vendor/PHPMailer/src/PHPMailer.php exists
+```
+
+The mailer auto-detects PHPMailer's presence; if missing, it falls back
+to the `log` driver and logs a warning so you'll see the misconfiguration.
+
 ## Tightening security (optional but recommended)
 
 - **Vendor JS libraries locally**: download `epub.js` and `jszip` into

@@ -16,6 +16,11 @@ import { initHighlights }   from './reader/highlights.js';
 import { initInBookSearch } from './reader/in-book-search.js';
 import { initTts }          from './reader/tts.js';
 import { initDictionary }   from './reader/dictionary.js';
+import { initSessions }     from './reader/sessions.js';
+import { initImmersive }    from './reader/immersive.js';
+import { registerServiceWorker } from './shared/sw-register.js';
+
+registerServiceWorker();
 
 const shell = document.getElementById('reader');
 if (!shell) {
@@ -59,6 +64,8 @@ async function boot(ctx) {
         initInBookSearch(ctx);
         initTts(ctx);
         initDictionary(ctx);
+        initSessions(ctx);
+        initImmersive(ctx);
 
         document.querySelectorAll('[data-dismiss]').forEach(btn => {
             btn.addEventListener('click', () => {

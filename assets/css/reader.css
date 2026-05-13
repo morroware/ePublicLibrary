@@ -572,3 +572,53 @@
     font-size: var(--text-sm);
 }
 .checkbox-row input { margin: 0; }
+.setting-hint {
+    margin: var(--space-1) 0 0 1.7rem;
+    color: var(--text-tertiary);
+    font-size: var(--text-xs);
+}
+
+/* =========================================================================
+   Phase 4 — immersive mode
+   ========================================================================= */
+
+.reader-shell.is-immersive .reader-header,
+.reader-shell.is-immersive .reader-progress-info,
+.reader-shell.is-immersive #tts-toolbar {
+    opacity: 0;
+    transform: translateY(-100%);
+    pointer-events: none;
+    transition: opacity var(--duration) var(--ease), transform var(--duration) var(--ease);
+}
+.reader-shell.is-immersive .reader-header { transform: translateY(-100%); }
+.reader-shell.is-immersive {
+    grid-template-rows: 0 1fr 4px;
+}
+.reader-shell.is-immersive .reader-progress-bar {
+    background: transparent;
+    border-top: 0;
+    padding: 0;
+}
+.reader-shell.is-immersive .reader-progress-track {
+    height: 3px; min-height: 3px;
+}
+.reader-shell.is-immersive .reader-hotspot {
+    width: 30%;  /* slightly larger tap zones once chrome is gone */
+}
+
+/* Tap-center reveals the chrome briefly */
+.reader-shell.is-immersive.immersive-reveal .reader-header,
+.reader-shell.is-immersive.immersive-reveal .reader-progress-info {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+.reader-shell.is-immersive.immersive-reveal {
+    grid-template-rows: auto 1fr auto;
+}
+
+#btn-immersive[aria-pressed="true"] {
+    background: var(--accent-100);
+    color: var(--accent-700);
+    border-color: var(--accent-500);
+}

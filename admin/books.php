@@ -64,6 +64,33 @@ if (is_post()) {
         flash('success', '“' . $book['title'] . '” deleted.');
         redirect('admin/books.php');
     }
+
+    if ($verb === 'bulk') {
+        $action = (string) ($_POST['bulk_action'] ?? '');
+        $ids    = array_filter(array_map('intval', (array) ($_POST['ids'] ?? [])));
+        if (!$ids || !in_array($action, ['publish', 'hide', 'remove', 'delete'], true)) {
+            flash('error', 'Pick a bulk action and at least one book.');
+            redirect('admin/books.php');
+        }
+        $count = 0;
+        foreach ($ids as $id) {
+            $book = BookRepository::findById($id);
+            if (!$book) continue;
+            if ($action === 'delete') {
+                BookFileStorage::deleteForBook($book);
+                ThumbnailService::delete($book['uuid']);
+                BookRepository::delete($id);
+                AuditLogger::log('book.delete', 'book', $id, ['title' => $book['title']]);
+            } else {
+                $status = $action === 'publish' ? 'published' : ($action === 'hide' ? 'hidden' : 'removed');
+                BookRepository::update($id, ['status' => $status]);
+                AuditLogger::log('book.bulk_status', 'book', $id, ['status' => $status]);
+            }
+            $count++;
+        }
+        flash('success', "Bulk {$action} applied to {$count} book" . ($count === 1 ? '' : 's') . '.');
+        redirect('admin/books.php');
+    }
 }
 
 if ($action === 'edit') {
@@ -91,6 +118,8 @@ $result = BookRepository::paginate([
     'search' => $search,
     'sort_by' => 'created',
     'sort_dir' => 'desc',
+    // Admin sees every status, not just published
+    'include_all_status' => true,
 ]);
 
 render('admin/books', [

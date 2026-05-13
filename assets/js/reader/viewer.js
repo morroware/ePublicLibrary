@@ -6,12 +6,21 @@
 
 export async function initViewer(ctx) {
     const book = ePub(ctx.bookUrl);
+    // Flow preference is set in the Settings panel ("Continuous scroll").
+    // Read it once at init — changing the flow requires re-creating the
+    // rendition, which the settings module handles via a page reload.
+    let flow = 'paginated';
+    try {
+        const s = JSON.parse(localStorage.getItem('elib-reader-settings') || '{}');
+        if (s.continuousScroll) flow = 'scrolled-doc';
+    } catch { /* ignore */ }
+
     const rendition = book.renderTo(ctx.viewer, {
         width: '100%',
         height: '100%',
-        flow: 'paginated',
-        spread: 'auto',
-        manager: 'default',
+        flow,
+        spread: flow === 'paginated' ? 'auto' : 'none',
+        manager: flow === 'paginated' ? 'default' : 'continuous',
     });
 
     // Apply persisted theme to the rendition (sepia / dark / light)

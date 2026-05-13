@@ -5,6 +5,9 @@
 import { initThemeToggle } from './shared/theme.js';
 import { combobox } from './shared/combobox.js';
 import { get, url } from './shared/api.js';
+import { registerServiceWorker } from './shared/sw-register.js';
+
+registerServiceWorker();
 
 /* ---- Theme ---- */
 initThemeToggle();
