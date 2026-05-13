@@ -71,7 +71,9 @@ $user = $user ?? current_user();
                             <div class="user-menu-name"><?= e($user['display_name'] ?: $user['username']) ?></div>
                             <div class="user-menu-email"><?= e($user['email']) ?></div>
                             <hr>
-                            <a href="<?= e(url('account.php')) ?>" role="menuitem">My account</a>
+                            <a href="<?= e(url('collections.php')) ?>" role="menuitem">Your shelves</a>
+                            <a href="<?= e(url('search.php')) ?>" role="menuitem">Advanced search</a>
+                            <a href="<?= e(url('account.php')) ?>" role="menuitem">Account</a>
                             <?php if ($user['role'] === 'admin'): ?>
                                 <a href="<?= e(url('admin/index.php')) ?>" role="menuitem">Admin</a>
                             <?php endif; ?>

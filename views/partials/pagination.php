@@ -3,14 +3,16 @@ defined('APP_BOOTED') or exit;
 /** @var int $page */
 /** @var int $pages */
 /** @var array $queryParams */
+/** @var string|null $baseUrl  e.g. 'index.php', 'genre.php', 'search.php' */
 if ($pages <= 1) {
     return;
 }
+$baseUrl = $baseUrl ?? 'index.php';
 $baseQuery = $queryParams;
 unset($baseQuery['page']);
-$linkFor = static function (int $p) use ($baseQuery) {
+$linkFor = static function (int $p) use ($baseQuery, $baseUrl) {
     $baseQuery['page'] = $p;
-    return url('index.php?' . http_build_query($baseQuery));
+    return url($baseUrl . '?' . http_build_query($baseQuery));
 };
 $range = 2;
 $start = max($page - $range, 1);

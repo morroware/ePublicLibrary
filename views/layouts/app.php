@@ -22,6 +22,7 @@ $user = current_user();
     <link rel="stylesheet" href="<?= e(asset('css/base.css')) ?>">
     <link rel="stylesheet" href="<?= e(asset('css/components.css')) ?>">
     <link rel="stylesheet" href="<?= e(asset('css/library.css')) ?>">
+    <link rel="stylesheet" href="<?= e(asset('css/discovery.css')) ?>">
     <link rel="preconnect" href="<?= e(asset('fonts/')) ?>" crossorigin>
 </head>
 <body class="<?= e($pageClass) ?>" data-app-base="<?= e(app_base()) ?>">
