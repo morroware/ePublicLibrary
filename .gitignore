@@ -1,0 +1,51 @@
+# --- ePublicLibrary ignore rules ---
+
+# Real config (the example is committed)
+/includes/config.php
+
+# Runtime data: uploaded books, generated covers, sessions, logs, caches
+/storage/books/**
+!/storage/books/.gitkeep
+/storage/uploads/tmp/**
+!/storage/uploads/tmp/.gitkeep
+/storage/logs/**
+!/storage/logs/.gitkeep
+/storage/cache/**
+!/storage/cache/.gitkeep
+/assets/covers/*.jpg
+/assets/covers/*.jpeg
+/assets/covers/*.png
+/assets/covers/*.webp
+
+# Legacy directory from the v7.x PoC — keep an admin importer for it but
+# don't track its contents.
+/books/
+
+# Legacy artifacts (deleted in this refactor but commonly recreated)
+*.legacy
+*.bak
+*.old
+
+# Vendored libraries — `vendor/README.md` is committed; the libs themselves
+# are user-installed (see assets/vendor/README.md).
+/assets/vendor/*.js
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.iml
+
+# Dependency directories (not used today; reserved for tooling)
+/vendor/
+/node_modules/
+
+# Logs anywhere
+*.log
+
+# Test artifacts
+/.phpunit.result.cache
+/coverage/

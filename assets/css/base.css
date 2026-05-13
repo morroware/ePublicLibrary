@@ -1,0 +1,143 @@
+/* ============================================================================
+   base.css — reset, typography, focus, accessibility primitives
+   ============================================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; }
+
+html {
+    -webkit-text-size-adjust: 100%;
+    color-scheme: light dark;
+}
+
+body {
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    min-height: 100vh;
+    transition: background-color var(--duration) var(--ease),
+                color var(--duration) var(--ease);
+}
+
+img, picture, svg, video, canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+button { font: inherit; cursor: pointer; }
+input, select, textarea { font: inherit; }
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    line-height: var(--leading-tight);
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+}
+h1 { font-size: var(--text-4xl); }
+h2 { font-size: var(--text-2xl); }
+h3 { font-size: var(--text-xl); }
+h4 { font-size: var(--text-lg); }
+
+p { line-height: var(--leading-normal); }
+
+a {
+    color: var(--accent-600);
+    text-decoration: none;
+    transition: color var(--duration-fast) var(--ease);
+}
+a:hover { color: var(--accent-700); }
+
+code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background: var(--bg-tertiary);
+    padding: 0.1em 0.4em;
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+}
+
+pre {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    background: var(--bg-tertiary);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+    line-height: var(--leading-snug);
+}
+
+hr {
+    border: 0;
+    border-top: 1px solid var(--border-default);
+    margin: var(--space-6) 0;
+}
+
+/* Visible focus indicator that always wins */
+:focus-visible {
+    outline: 2px solid var(--accent-500);
+    outline-offset: 3px;
+    border-radius: var(--radius-sm);
+}
+
+/* Default browser focus removed only when focus-visible is supported */
+:focus:not(:focus-visible) { outline: none; }
+
+/* Skip-to-content link */
+.skip-link {
+    position: absolute;
+    left: -10000px;
+    top: var(--space-2);
+    background: var(--accent-500);
+    color: var(--accent-fg);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    z-index: var(--z-toast);
+    font-weight: 600;
+}
+.skip-link:focus { left: var(--space-2); }
+
+/* Screen-reader only */
+.visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+/* Utilities */
+.muted { color: var(--text-tertiary); }
+.text-secondary { color: var(--text-secondary); }
+.text-center { text-align: center; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Selection */
+::selection {
+    background: var(--accent-200);
+    color: var(--accent-700);
+}
+[data-theme="dark"] ::selection,
+.dark ::selection {
+    background: var(--accent-700);
+    color: var(--accent-fg);
+}

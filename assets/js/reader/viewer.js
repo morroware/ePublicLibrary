@@ -1,0 +1,54 @@
+/**
+ * Initialize the epub.js Book + Rendition.
+ *
+ * Returns { book, rendition }.
+ */
+
+export async function initViewer(ctx) {
+    const book = ePub(ctx.bookUrl);
+    const rendition = book.renderTo(ctx.viewer, {
+        width: '100%',
+        height: '100%',
+        flow: 'paginated',
+        spread: 'auto',
+        manager: 'default',
+    });
+
+    // Apply persisted theme to the rendition (sepia / dark / light)
+    applyRenditionTheme(rendition, getStoredTheme());
+
+    // Display the initial location (resumed CFI if any).
+    try {
+        await rendition.display(ctx.initialCfi || undefined);
+    } catch (e) {
+        // Some EPUBs throw on initial CFI; fall back to start.
+        await rendition.display();
+    }
+
+    // Generate location index for percentage calculation in the background.
+    book.ready.then(() => {
+        book.locations.generate(1024).catch(() => { /* not critical */ });
+    });
+
+    return { book, rendition };
+}
+
+export function applyRenditionTheme(rendition, theme) {
+    const themes = {
+        light: { body: { background: '#fdfcfb', color: '#1c1917' } },
+        dark:  { body: { background: '#0f0e0d', color: '#fafaf9' } },
+        sepia: { body: { background: '#f4ecd8', color: '#5b4636' } },
+    };
+    rendition.themes.register('light', themes.light);
+    rendition.themes.register('dark',  themes.dark);
+    rendition.themes.register('sepia', themes.sepia);
+    const resolved = theme === 'auto'
+        ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : theme;
+    rendition.themes.select(resolved);
+    document.getElementById('reader').setAttribute('data-theme', resolved);
+}
+
+function getStoredTheme() {
+    return localStorage.getItem('elib-reader-theme') || 'auto';
+}

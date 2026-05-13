@@ -1,0 +1,194 @@
+/* ============================================================================
+   ePublicLibrary — Design tokens
+   Warm, editorial palette (terracotta + teal) preserved from BookShelf v7.x.
+   Loaded first on every page so everything else can `var(--token)`.
+   ============================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300..700&display=swap');
+
+:root {
+    /* ---- Light theme (default) ---- */
+    --bg-primary:        #fdfcfb;
+    --bg-secondary:      #f8f7f4;
+    --bg-tertiary:       #f0efe9;
+    --bg-elevated:       #ffffff;
+
+    --text-primary:      #1c1917;
+    --text-secondary:    #57534e;
+    --text-tertiary:     #a8a29e;
+    --text-inverse:      #fafaf9;
+
+    --border-subtle:     #f5f5f4;
+    --border-default:    #e7e5e4;
+    --border-strong:     #d6d3d1;
+
+    /* Terracotta accent */
+    --accent-50:         #fef7f0;
+    --accent-100:        #fceee0;
+    --accent-200:        #f8d9bb;
+    --accent-300:        #efb98a;
+    --accent-400:        #db9456;
+    --accent-500:        #c2703c;
+    --accent-600:        #a85a2a;
+    --accent-700:        #8b4a22;
+    --accent-fg:         #ffffff;
+
+    /* Teal secondary */
+    --secondary-50:      #ecfdf5;
+    --secondary-200:     #99f6e4;
+    --secondary-500:     #0d7377;
+    --secondary-600:     #0a5c5f;
+    --secondary-700:     #064e54;
+
+    /* Status colors */
+    --color-success:     #15803d;
+    --color-success-bg:  #ecfdf5;
+    --color-warning:     #c2410c;
+    --color-warning-bg:  #fff7ed;
+    --color-danger:      #b91c1c;
+    --color-danger-bg:   #fef2f2;
+    --color-info:        var(--secondary-500);
+    --color-info-bg:     var(--secondary-50);
+
+    /* Shadows — warm-tinted */
+    --shadow-subtle:  0 1px 2px rgba(28, 25, 23, 0.03);
+    --shadow-default: 0 1px 3px rgba(28, 25, 23, 0.06), 0 1px 2px rgba(28, 25, 23, 0.04);
+    --shadow-medium:  0 4px 12px -2px rgba(28, 25, 23, 0.08), 0 2px 6px -2px rgba(28, 25, 23, 0.04);
+    --shadow-large:   0 12px 24px -4px rgba(28, 25, 23, 0.10), 0 4px 8px -2px rgba(28, 25, 23, 0.05);
+    --shadow-xlarge:  0 24px 48px -8px rgba(28, 25, 23, 0.12), 0 12px 24px -8px rgba(28, 25, 23, 0.06);
+
+    /* Radii */
+    --radius-sm:  6px;
+    --radius-md:  8px;
+    --radius-lg:  12px;
+    --radius-xl:  16px;
+    --radius-2xl: 20px;
+    --radius-full: 9999px;
+
+    /* Spacing scale (4px base) */
+    --space-1:   0.25rem;
+    --space-2:   0.5rem;
+    --space-3:   0.75rem;
+    --space-4:   1rem;
+    --space-5:   1.25rem;
+    --space-6:   1.5rem;
+    --space-8:   2rem;
+    --space-10:  2.5rem;
+    --space-12:  3rem;
+    --space-16:  4rem;
+
+    /* Typography */
+    --font-display: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+    --font-body:    'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --font-mono:    ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+
+    --text-xs:   0.75rem;
+    --text-sm:   0.875rem;
+    --text-base: 1rem;
+    --text-lg:   1.125rem;
+    --text-xl:   1.25rem;
+    --text-2xl:  1.5rem;
+    --text-3xl:  1.875rem;
+    --text-4xl:  2.25rem;
+    --text-5xl:  3rem;
+
+    --leading-tight:  1.2;
+    --leading-snug:   1.4;
+    --leading-normal: 1.6;
+    --leading-loose:  1.8;
+
+    /* Motion */
+    --ease:        cubic-bezier(0.16, 1, 0.3, 1);
+    --duration-fast: 150ms;
+    --duration:      300ms;
+    --duration-slow: 500ms;
+
+    /* z-index scale */
+    --z-base:    1;
+    --z-sticky:  50;
+    --z-overlay: 100;
+    --z-modal:   200;
+    --z-toast:   300;
+}
+
+/* ---- Dark theme ---- */
+:root[data-theme="dark"],
+.dark {
+    --bg-primary:        #0f0e0d;
+    --bg-secondary:      #1a1918;
+    --bg-tertiary:       #262524;
+    --bg-elevated:       #1a1918;
+
+    --text-primary:      #fafaf9;
+    --text-secondary:    #d6d3d1;
+    --text-tertiary:     #78716c;
+    --text-inverse:      #1c1917;
+
+    --border-subtle:     #262524;
+    --border-default:    #3d3a38;
+    --border-strong:     #525150;
+
+    --accent-50:         #1f1714;
+    --accent-100:        #2d211b;
+    --accent-200:        #4a3528;
+    --accent-300:        #c08a5a;
+    --accent-400:        #e07c3f;
+    --accent-500:        #e07c3f;
+    --accent-600:        #c2703c;
+    --accent-700:        #a85a2a;
+
+    --secondary-50:      #0a1a18;
+    --secondary-200:     #115e59;
+    --secondary-500:     #14b8a6;
+    --secondary-600:     #0d9488;
+
+    --color-success-bg:  #052e1d;
+    --color-warning-bg:  #2a1409;
+    --color-danger-bg:   #1f0d0d;
+    --color-info-bg:     #052525;
+
+    --shadow-subtle:  0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-default: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-medium:  0 4px 12px -2px rgba(0, 0, 0, 0.5), 0 2px 6px -2px rgba(0, 0, 0, 0.4);
+    --shadow-large:   0 12px 24px -4px rgba(0, 0, 0, 0.6), 0 4px 8px -2px rgba(0, 0, 0, 0.5);
+    --shadow-xlarge:  0 24px 48px -8px rgba(0, 0, 0, 0.7), 0 12px 24px -8px rgba(0, 0, 0, 0.6);
+}
+
+/* ---- Sepia theme (reader-only by default; opt-in elsewhere) ---- */
+:root[data-theme="sepia"] {
+    --bg-primary:     #f4ecd8;
+    --bg-secondary:   #ede4ca;
+    --bg-tertiary:    #e6dcbd;
+    --bg-elevated:    #f4ecd8;
+    --text-primary:   #5b4636;
+    --text-secondary: #6b5a48;
+    --text-tertiary:  #998870;
+    --border-subtle:  #e6dcbd;
+    --border-default: #d8cba5;
+    --border-strong:  #b8a87f;
+}
+
+/* Respect OS preference if no explicit theme set */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+        color-scheme: dark;
+    }
+    :root:not([data-theme]):not(.no-auto-dark) {
+        --bg-primary:        #0f0e0d;
+        --bg-secondary:      #1a1918;
+        --bg-tertiary:       #262524;
+        --bg-elevated:       #1a1918;
+        --text-primary:      #fafaf9;
+        --text-secondary:    #d6d3d1;
+        --text-tertiary:     #78716c;
+        --text-inverse:      #1c1917;
+        --border-subtle:     #262524;
+        --border-default:    #3d3a38;
+        --border-strong:     #525150;
+        --accent-500:        #e07c3f;
+        --secondary-500:     #14b8a6;
+        --color-success-bg:  #052e1d;
+        --color-warning-bg:  #2a1409;
+        --color-danger-bg:   #1f0d0d;
+    }
+}
