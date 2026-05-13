@@ -1,0 +1,61 @@
+# ePublicLibrary — top-level Apache rules.
+# Works at the document root OR in a subdirectory (e.g. /library/).
+# Defense-in-depth: every sensitive dir also carries its own .htaccess deny.
+
+# ---- Block dotfiles, config, logs, markdown, examples ----------------------
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<FilesMatch "(^config\.php$|\.example\.php$|\.log$|\.md$|composer\.(json|lock)|package(-lock)?\.json|\.gitignore|\.gitattributes)">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# ---- Block PHP variants commonly used to bypass extension checks -----------
+# (Real entrypoints are .php — never .phtml/.php5/.inc.)
+<FilesMatch "\.(phtml|phps|php[3457]?|inc)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# ---- Disable directory listing & CGI execution -----------------------------
+Options -Indexes -ExecCGI
+<IfModule mod_autoindex.c>
+    IndexIgnore *
+</IfModule>
+
+# ---- Cache headers: cache static, never cache dynamic ----------------------
+<IfModule mod_headers.c>
+    <FilesMatch "\.(css|js|woff2|woff|ttf|otf|jpg|jpeg|png|gif|svg|ico|webp)$">
+        Header set Cache-Control "public, max-age=604800"
+    </FilesMatch>
+    <FilesMatch "\.php$">
+        Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    </FilesMatch>
+</IfModule>
+
+# ---- Compression ------------------------------------------------------------
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript application/javascript application/json image/svg+xml
+</IfModule>
+
+# NOTE: ErrorDocument is deliberately NOT set here. The application renders
+# its own 403/404/419/429/500 pages via PHP so they honor the install's
+# base URL and design system (see views/errors/*.php).

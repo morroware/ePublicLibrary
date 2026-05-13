@@ -1,0 +1,136 @@
+<?php
+/**
+ * ThumbnailService — generate, save, and serve book cover thumbnails.
+ *
+ * Covers live in {storage.covers_path}/{book_uuid}.jpg.
+ * Generation uses the cover image embedded in the EPUB (via EpubParser),
+ * resized to a max width with PHP GD.
+ */
+
+defined('APP_BOOTED') or exit;
+
+class ThumbnailService
+{
+    public const TARGET_WIDTH    = 400;   // px
+    public const TARGET_QUALITY  = 85;    // JPEG quality (0-100)
+
+    /** Absolute path to the covers directory, created if missing. */
+    public static function coversDir(): string
+    {
+        $dir = (string) config('storage.covers_path', '');
+        if ($dir === '') {
+            $dir = project_path('assets/covers');
+        }
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        return rtrim($dir, '/\\');
+    }
+
+    /** Filesystem path for a UUID's cover. */
+    public static function pathFor(string $uuid): string
+    {
+        return self::coversDir() . '/' . $uuid . '.jpg';
+    }
+
+    /**
+     * Web-relative path (under assets/) used as books.cover_path.
+     * Returns 'covers/{uuid}.jpg' which combines with asset() in templates.
+     */
+    public static function relPathFor(string $uuid): string
+    {
+        return 'covers/' . $uuid . '.jpg';
+    }
+
+    /**
+     * Generate and save a cover from an EPUB. Returns the relative cover_path
+     * (suitable for books.cover_path), or null if no usable cover was found.
+     */
+    public static function generateFromEpub(string $epubPath, string $bookUuid): ?string
+    {
+        try {
+            $meta = EpubParser::parse($epubPath);
+        } catch (Throwable $e) {
+            log_error($e);
+            return null;
+        }
+        if (empty($meta['cover_data'])) {
+            return null;
+        }
+        return self::saveFromBytes($meta['cover_data'], $bookUuid);
+    }
+
+    /**
+     * Save raw image bytes as the cover for a UUID. Resizes to TARGET_WIDTH.
+     * Returns the relative path or null on failure.
+     */
+    public static function saveFromBytes(string $bytes, string $bookUuid): ?string
+    {
+        if (!function_exists('imagecreatefromstring')) {
+            return null;
+        }
+        $img = @imagecreatefromstring($bytes);
+        if ($img === false) {
+            return null;
+        }
+        $resized = self::resize($img);
+        $dest = self::pathFor($bookUuid);
+        $ok = imagejpeg($resized, $dest, self::TARGET_QUALITY);
+        imagedestroy($img);
+        if ($resized !== $img) {
+            // resize() returned a new image
+            // (already destroyed $img above when same; here destroy resized too)
+        }
+        @imagedestroy($resized);
+        if (!$ok) {
+            return null;
+        }
+        @chmod($dest, 0644);
+        return self::relPathFor($bookUuid);
+    }
+
+    /**
+     * Save image from a base64 data URL (canvas.toDataURL output) — used by
+     * the client-side cover-cache fallback.
+     */
+    public static function saveFromDataUrl(string $dataUrl, string $bookUuid): ?string
+    {
+        if (!preg_match('~^data:image/(jpe?g|png|webp);base64,(.+)$~i', $dataUrl, $m)) {
+            return null;
+        }
+        $bytes = base64_decode($m[2], true);
+        if ($bytes === false) {
+            return null;
+        }
+        return self::saveFromBytes($bytes, $bookUuid);
+    }
+
+    private static function resize($img)
+    {
+        $w = imagesx($img);
+        $h = imagesy($img);
+        if ($w <= self::TARGET_WIDTH) {
+            return $img;
+        }
+        $newW = self::TARGET_WIDTH;
+        $newH = (int) round($h * ($newW / $w));
+        $dst = imagecreatetruecolor($newW, $newH);
+        // Preserve transparency if PNG/GIF originals
+        imagealphablending($dst, false);
+        imagesavealpha($dst, true);
+        $white = imagecolorallocate($dst, 255, 255, 255);
+        imagefilledrectangle($dst, 0, 0, $newW, $newH, $white);
+        imagecopyresampled($dst, $img, 0, 0, 0, 0, $newW, $newH, $w, $h);
+        imagedestroy($img);
+        return $dst;
+    }
+
+    /** Delete a cover. Idempotent. */
+    public static function delete(string $uuid): void
+    {
+        $path = self::pathFor($uuid);
+        if (is_file($path)) {
+            @unlink($path);
+        }
+    }
+}
