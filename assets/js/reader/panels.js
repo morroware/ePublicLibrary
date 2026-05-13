@@ -6,9 +6,11 @@ import { focusTrap } from '../shared/focus-trap.js';
 
 export function initPanels(ctx) {
     const panels = {
-        'panel-toc':       { btn: 'btn-toc' },
-        'panel-bookmarks': { btn: 'btn-bookmarks' },
-        'panel-settings':  { btn: 'btn-settings' },
+        'panel-toc':        { btn: 'btn-toc' },
+        'panel-search':     { btn: 'btn-search' },
+        'panel-highlights': { btn: 'btn-highlights' },
+        'panel-bookmarks':  { btn: 'btn-bookmarks' },
+        'panel-settings':   { btn: 'btn-settings' },
     };
 
     const traps = {};

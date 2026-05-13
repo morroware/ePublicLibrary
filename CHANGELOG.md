@@ -1,5 +1,96 @@
 # Changelog
 
+## 1.2.0 — Reader features
+
+Phase 3. The reader catches up to commercial parity: highlights and
+annotations with notes and color, full-text search across the book,
+text-to-speech with adjustable rate and voice picker, double-tap word
+lookup against a dictionary API (proxied + cached), and an
+OpenDyslexic font option.
+
+### Added
+
+- **Highlights & annotations**
+  - Select text in the rendition → a 5-color picker pops up
+    (yellow / green / blue / pink / orange) to save the highlight
+    with a click.
+  - Tap an existing highlight → edit popover lets you change the
+    color, add or edit a note, or delete the highlight.
+  - Side panel lists all highlights with chapter context and tap-to-jump.
+  - **Export to Markdown** — one-click download of all highlights as
+    a Markdown file grouped by chapter, each with its note.
+  - Server-synced for authed users via `api/highlights.php` (GET/POST/
+    PATCH/DELETE); falls back to localStorage for guests.
+  - `HighlightRepository` class with `listForBook`, `create`,
+    `update`, `delete`, `findById`, plus a 5-color whitelist.
+- **In-book search** — search panel iterates the EPUB spine lazily,
+  surfacing matches with `<mark>`-highlighted snippets grouped by
+  chapter. Tap a snippet to jump.
+- **Text-to-speech** — toolbar appears under the header when the TTS
+  button is toggled. Uses the browser's `SpeechSynthesis` API (no
+  third-party):
+  - Play / Pause / Stop / Previous-sentence / Next-sentence buttons
+  - Rate slider (0.5×–2×) with live readout
+  - Voice picker (lists the user's installed system voices)
+  - Auto-advances to the next page at end-of-chunk
+  - Visual highlight of the currently-spoken sentence
+- **Dictionary popup**
+  - Optional setting (off by default to keep selection-for-highlight
+    snappy). When enabled, double-tap a word → popover with
+    pronunciation and top 3 definitions per part of speech.
+  - `api/dictionary.php` proxies `dictionaryapi.dev` and caches each
+    word in `storage/cache/dictionary/` for 30 days. Per-IP rate
+    limited.
+  - Graceful degradation if the upstream is unreachable.
+- **OpenDyslexic font option** in the font-family setting — wires an
+  `@font-face` block into every rendered chapter iframe pointing at
+  `assets/fonts/OpenDyslexic-{Regular,Bold}.woff2`. The font files
+  are gitignored; see `assets/fonts/README.md` for download
+  instructions.
+- New reader-header buttons: search, highlights, listen (TTS).
+- New reader panels: `panel-search` and `panel-highlights`, wired
+  through the existing focus-trap and click-outside logic.
+- Reader shell carries the highlights API URL as a new `data-*`
+  attribute so the JS module is path-agnostic.
+
+### Changed
+
+- `views/reader/show.php` adds the new buttons, panels, and TTS
+  toolbar; settings panel gains a "Tools" section with the
+  dictionary toggle.
+- `assets/js/reader.js` orchestrates the four new modules:
+  `highlights.js`, `in-book-search.js`, `tts.js`, `dictionary.js`.
+- `assets/js/reader/settings.js` injects `@font-face` declarations
+  for OpenDyslexic into every rendered iframe so the family resolves
+  to local files; falls back gracefully when the files are absent.
+- `assets/js/reader/panels.js` registers the two new panels.
+- `assets/css/reader.css` grows ~330 lines of Phase-3 styling: color
+  swatches, highlight items with per-color accent stripes, in-book
+  search results with `<mark>` styling, TTS toolbar, dictionary
+  popover, settings toggle group.
+
+### Notes
+
+- `epub.js` is **still pinned at 0.3.93**. A version upgrade was on
+  the Phase 3 roadmap but is deferred to a follow-up release so the
+  feature surface can be exercised against the known-good version
+  first. Highlights are rendered via `rendition.annotations.add()`,
+  which 0.3.93 supports.
+- Dictionary lookup requires the host to allow outbound HTTPS from
+  PHP (`file_get_contents` on remote URLs). On hosts with
+  `allow_url_fopen=Off`, the proxy returns 503 and the client shows
+  "Lookup unavailable right now."
+- The dictionary cache lives under `storage/cache/dictionary/`
+  (sharded by first two letters). Safe to delete at any time.
+
+### Migration notes
+
+No new SQL migrations — the `highlights` table (migration 0007) has
+been in place since Phase 1; this release just adds the class +
+API on top.
+
+---
+
 ## 1.1.0 — Library UX
 
 Phase 2 of the multi-phase refactor. Builds discovery and curation on top
@@ -177,8 +268,6 @@ a MySQL-backed data layer.
 
 ## Roadmap
 
-- **1.2.0 — Reader features**: Highlights & annotations, in-book search,
-  dictionary popup, text-to-speech, dyslexia-friendly font, epub.js upgrade.
-- **1.3.0 — Polish**: Reading stats dashboard, immersive mode, offline
-  reading via service worker, admin bulk actions, email-based password
-  reset.
+- **1.3.0 — Polish**: Reading stats dashboard, reading session
+  tracking, immersive mode, offline reading via service worker, admin
+  bulk actions, email-based password reset, epub.js upgrade.
